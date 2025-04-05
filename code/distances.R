@@ -157,9 +157,13 @@ saveRDS(NUTS3_ext, "data/NUTS3_ext.rds")
 source("code/helpers.R")
 library(osrm)
 
-dist <- split_large_dist_matrix(qDF(qM(fselect(qDF(NUTS3_ext), nuts_id, lon, lat), 1)))
+centroids <- qDF(qM(fselect(qDF(NUTS3_ext), nuts_id, lon, lat), 1))
+dist <- split_large_dist_matrix(centroids)
 anyNA(dist$distances)
 anyNA(dist$durations)
+dist$destinations <- NULL
+dist$centroids <- centroids
+setrename(dist, sources = starts)
 
 # Road Transport Cost Estimation
 # ChatGPT suggests: Cost [€] = 1.05 × (distance in km) + 0.60 × (travel time in minutes)
@@ -167,11 +171,13 @@ anyNA(dist$durations)
 # Also sector-specific results and different equations for domestic/international shipments...
 
 # Compute travel cost
-dist$travel_cost <- dist$durations / 3600
+dist$cents_per_ton_km <- exp(4.650 - 0.395 * log(dist$distances / dist$durations * 60 / 1000) - 
+                                     0.064 * log(dist$distances / 1000) + 
+                                     0.024 * outer(NUTS3_ext$cntr_code, NUTS3_ext$cntr_code, "!="))
+diag(dist$cents_per_ton_km) <- 0
+dist$dollars_per_ton <- dist$cents_per_ton_km * dist$distances / 10000
 
-
-
-
+saveRDS(dist, "data/NUTS3_ext_distances_and_costs.rds")
 
 
 
