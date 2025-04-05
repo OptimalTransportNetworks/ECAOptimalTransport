@@ -8,6 +8,7 @@ NUTS <- geojsonsf::geojson_sf("data/NUTS_RG_01M_2016_3035.geojson") |>
 st_crs(NUTS) <- 3035
 NUTS %<>% st_make_valid()
 
+# NUTS |> subset(levl_code == 1) |> mapview::mapview()
 # NUTS |> subset(levl_code == 2) |> mapview::mapview()
 # NUTS |> subset(levl_code == 3) |> mapview::mapview()
 

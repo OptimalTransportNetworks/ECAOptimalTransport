@@ -161,6 +161,11 @@ dist <- split_large_dist_matrix(qDF(qM(fselect(qDF(NUTS3_ext), nuts_id, lon, lat
 anyNA(dist$distances)
 anyNA(dist$durations)
 
+# Road Transport Cost Estimation
+# ChatGPT suggests: Cost [€] = 1.05 × (distance in km) + 0.60 × (travel time in minutes)
+# Iimi (2023) suggests: log(U.S. cents per ton-km) = 4.650 - 0.395 × log(speed in km/h) - 0.064 × log(distance in km) + 0.024 × crossborder dummy
+# Also sector-specific results and different equations for domestic/international shipments...
+
 # Compute travel cost
 dist$travel_cost <- dist$durations / 3600
 
