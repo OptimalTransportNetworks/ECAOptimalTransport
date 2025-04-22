@@ -455,11 +455,13 @@ load("data/transport_network/trans_ECA_network.RData")
 
 # This is the previous Plot
 tm_basemap("Esri.WorldGrayCanvas", zoom = 5) +
-  tm_shape(edges) +
+  tm_shape(mutate(edges, gravity_rd = gravity_rd / 1e4)) +
   tm_lines(col = "gravity_rd",
-           col.scale = tm_scale_intervals(values = "inferno", breaks = c(0, 1, 5, 25, 100, Inf)),
-           col.legend = tm_legend("Sum of Gravity", position = c("right", "bottom"), frame = FALSE, 
-                                  text.size = 1.5, title.size = 2), lwd = 2) +
+           col.scale = tm_scale_intervals(values = "inferno", breaks = c(0, 1, 5, 25, 100, Inf)*2),
+           col.legend = tm_legend("Sum of Gravity", position = c("left", "top"), frame = FALSE, 
+                                  text.size = 1, title.size = 1.2, 
+                                  title.padding = c(-0.3, 0, -0.5, 0), 
+                                  item.space = 0), lwd = 1.5) +
   tm_shape(add_links) + tm_lines(col = "green4", lwd = 1) + 
   tm_shape(subset(nodes, key_city)) + tm_dots(size = 0.2) +
   tm_shape(subset(nodes, !key_city)) + tm_dots(size = 0.1, fill = "grey70") +
@@ -480,7 +482,7 @@ nodes_coord <- st_coordinates(nodes) |> qDF() |> setNames(c("lon", "lat"))
 # Fetch Routes
 for (i in seq_row(edges_ind)) {
   cat(i, " ")
-  Sys.sleep(0.1)
+  # Sys.sleep(0.1)
   route <- osrmRoute(ss(nodes_coord, edges_ind[i, 1]),
                      ss(nodes_coord, edges_ind[i, 2]), overview = "simplified") |>
     tryCatch(error = function(e) NULL)
@@ -500,23 +502,25 @@ edges_real %<>% st_make_valid()
 edges_real |> qsave("data/transport_network/edges_real_simplified.qs")
 
 # Update info
-edges_real <- qread("data/transport_network/edges_real_simplified.qs")
+edges_real <- qread("data/transport_network/edges_real.qs")
 edges_real %<>% join(atomic_elem(edges), on = c("from", "to"), drop = "x", overid = 2)
 
 # Draw the updated plot
 
-# <Figure 15>
-pdf("figures/trans_ECA_network_actual_discretized_gravity_new_roads_real_edges.pdf", width = 10, height = 4.2)
-tm_basemap("CartoDB.Positron", zoom = 6) +
-  tm_shape(edges_real) +
+tmap_options(raster.max_cells = 1e8)
+pdf("figures/trans_ECA_network_actual_discretized_gravity_new_roads_real_edges_OTM.pdf", width = 10, height = 4.2)
+tm_basemap("OpenTopoMap", zoom = 5) + # CartoDB.Positron
+  tm_shape(mutate(edges_real, gravity_rd = gravity_rd / 1e4)) +
   tm_lines(col = "gravity_rd",
-           col.scale = tm_scale_intervals(values = "inferno", breaks = c(0, 1, 5, 25, 100, Inf)),
-           col.legend = tm_legend("Sum of Gravity", position = c("right", "bottom"), frame = FALSE, 
-                                  text.size = 1.5, title.size = 2), lwd = 2) +
-  tm_shape(add_links) + tm_lines(col = "green4", lwd = 1) + # limegreen # , lty = "twodash"
-  tm_shape(subset(nodes, key_city)) + tm_dots(size = 0.15) +
-  tm_shape(subset(nodes, !key_city & population > 0)) + tm_dots(size = 0.1, fill = "grey20") +
-  tm_shape(subset(nodes, !key_city & population <= 0)) + tm_dots(size = 0.1, fill = "grey70") +
+           col.scale = tm_scale_intervals(values = "inferno", breaks = c(0, 1, 5, 25, 100, Inf)*2),
+           col.legend = tm_legend("Sum of Gravity", position = c("left", "top"), frame = FALSE, 
+                                  text.size = 1, title.size = 1.2, 
+                                  title.padding = c(-0.3, 0, -0.5, 0), 
+                                  item.space = 0), lwd = 0.85) +
+  tm_shape(add_links) + tm_lines(col = "green4", lwd = 0.7) + # limegreen # , lty = "twodash"
+  tm_shape(subset(nodes, key_city)) + tm_dots(size = 0.12, fill = "dodgerblue4") +
+  tm_shape(subset(nodes, !key_city & population > 0)) + tm_dots(size = 0.08, fill = "grey20") +
+  tm_shape(subset(nodes, !key_city & population <= 0)) + tm_dots(size = 0.08, fill = "grey70") +
   tm_layout(frame = FALSE) #, inner.margins = c(0.1, 0.1, 0.1, 0.1))
 dev.off()
 
