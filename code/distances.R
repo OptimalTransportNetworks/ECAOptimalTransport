@@ -1,163 +1,92 @@
 library(fastverse)
 fastverse_extend(sf, haven)
 
-# Load DTA
-ECA_NUTS <- read_dta("data/ECA_database_country and nuts_apc_unique.dta") # |> funique()
-# ECA_NUTS |> write_dta("data/ECA_database_country and nuts_apc_unique.dta")
-fndistinct(ECA_NUTS)
-ECA_NUTS |> fselect(year, nuts2id, nuts3id, nuts2idd, nuts3idd) |> fnunique()
-# ECA_NUTS |> gvr("year|nuts") |> fnunique()
+ECA_centroids <- fread("data/ECA_shp_new/ECA_centroids.csv") |> rm_stub("_") |> 
+  fsubset(is.finite(CX) & is.finite(CY)) |>
+  collap( ~ countrycode + shapeISO)
+# -> Matias fixed Kazhakstan, Armenia, and Georgia
 
-# Load geometries
-ECA_shp <- haven::read_dta("data/ECA_shp/ECA_shp.dta") |> rm_stub("_")
-fndistinct(ECA_shp)
+ECA_centroids |> 
+  fselect(shapeISO, shapeISO_nm, countrycode, lon = CX, lat = CY) |>
+  fwrite("data/ECA_centroids.csv")
 
-# Load GADM
-st_layers("/Users/sebastiankrantz/Documents/Data/GADM/gadm_410-levels.gpkg")
-GADM2 <- st_read("/Users/sebastiankrantz/Documents/Data/GADM/gadm_410-levels.gpkg", layer = "ADM_1") 
+ECA_centroids %<>% st_as_sf(coords = c("CX", "CY"), crs = 4326)
 
-# Generate bbox from ECA shp
-ECA_shp_sf <- ECA_shp |> 
-  fsubset(is.finite(X) & is.finite(Y) & between(X, -180, 180) & between(Y, -90, 90)) |> 
-  st_as_sf(coords = c("X", "Y"), crs = 4326) 
-
-ECA_bbox <- ECA_shp_sf |> 
-  st_bbox() |> 
-  st_as_sfc() |>
-  st_buffer(dist = units::as_units(500, "km")) 
-
-st_crs(ECA_bbox) <- st_crs(GADM2)
-
-# Subset GADM2 to ECA bbox
-qtable(st_is_valid(GADM2$geom))
-GADM2 %<>% subset(st_is_valid(geom)) %>% subset(st_intersects(geom, ECA_bbox, sparse = FALSE))
-# mapview::mapview(st_as_sf(ECA_bbox)) + mapview::mapview(GADM2)
-
-# Map firms to administrative areas
-map <- st_intersects(ECA_shp_sf, GADM2)
-qtable(vlengths(map))
-# ECA_shp_sf |> subset(vlengths(map) == 0) |> mapview::mapview()
-for (i in c(1, 5, 10)) { #
-  map2 <- st_within(ECA_shp_sf, st_buffer(GADM2, dist = units::as_units(i, "km")))
-  # qtable(vlengths(map2)[vlengths(map) == 0])
-  map[vlengths(map) == 0] <- map2[vlengths(map) == 0]
-}; rm(map2)
-qtable(vlengths(map))
-ECA_shp_sf$GADM2 <- ffirst(map) # fsum(ffirst(map, drop = FALSE))
-GADM2 %<>% ss(funique(ffirst(map), sort = TRUE))
-
-# Loading NUTS3
-NUTS3 <- readRDS("data/NUTS3_pop.rds") |> 
-  st_transform(4326) |>
-  subset(levl_code == 3 & 
-         cntr_code %!in% c("UK", "IE", "IS", "NO", "SE", "FI", "CY") & 
-         Reduce("&", Map(`>`, mctl(st_coordinates(st_centroid(geometry))), list(-10, 28))))
-
-# NUTS3 <- readRDS("data/NUTS3_pop.rds")
-setdiff(ECA_NUTS$nuts3id, NUTS3$nuts_id)
-setdiff(NUTS3$nuts_id, ECA_NUTS$nuts3id)
-
-# Pretty good overlap...
-# mapview::mapview(NUTS3) + mapview::mapview(GADM2)
-
-# Combining 
-# mapview::mapview(NUTS3) + mapview::mapview(subset(GADM2, GID_0 %!in% c("POL", "HUN", "SVN", "SVK", "ALB", "ROU", "HRV", "SRB", "BGR", "MNE", "MKD", "GRC", "TUR")))
-
-NUTS3_ext <- NUTS3 |> st_cast("MULTIPOLYGON") |>
-  rowbind(GADM2 |> 
-      subset(GID_0 %!in% c("POL", "HUN", "SVN", "SVK", "ALB", "ROU", "HRV", "SRB", "BGR", "MNE", "MKD", "GRC", "TUR")) |>
-      st_make_valid() |>
-      rmapshaper::ms_simplify(keep = 0.3) |>
-      st_cast("MULTIPOLYGON") |>
-      unclass() |>
-      fcompute(leve_code = 3L,
-               nuts_id = GID_1, 
-               cntr_code = iif(GID_0 == "XKO", "KO", countrycode::countrycode(GID_0, "iso3c", "iso2c")),
-               name_latn = VARNAME_1, 
-               nuts_name = NAME_1, 
-               geometry = geom), 
-  fill = TRUE) 
-
-NUTS3_ext %<>% st_make_valid() %>% 
-  rmapshaper::ms_simplify(keep = 0.5) %>%
-  st_make_valid() %>% 
-  colorderv(is_categorical)
-  
-# mapview::mapview(NUTS3_ext[, c("nuts_id", "nuts_name")])
-
-# Interior Polygons. Example: Ansbach, Germany
-NUTS3_ext %<>% sfheaders::sf_remove_holes() 
-
-st_within(subset(NUTS3_ext, nuts_id == "DE251", geometry),
-          subset(NUTS3_ext, nuts_id == "DE256", geometry)) 
-
-# Now removing interior polygons
-within_matrix <- st_within(NUTS3_ext, NUTS3_ext, sparse = FALSE)
-diag(within_matrix) <- FALSE
-interior_ids <- which(rowSums(within_matrix) > 0)
-# mapview::mapview(NUTS3_ext[interior_ids, c("nuts_id", "nuts_name")])
-container_ids <- apply(within_matrix, 1, function(x) which(x)[1])
-container_ids <- container_ids[interior_ids]
-
-NUTS3_ext[interior_ids, cat_vars(NUTS3_ext, "names")] <- 
-  NUTS3_ext[container_ids, cat_vars(NUTS3_ext, "names")]
-
-NUTS3_ext %<>% collap(~ nuts_id, fsum, ffirst)
-
-# Getting overall Boundary and Nightlights
-NUTS3_ext_hull <- st_union(NUTS3_ext) |> st_convex_hull() |> st_as_sf()
-# mapview::mapview(NUTS3_ext_hull)
-
-# bearer <- "eyJ0eXAiOiJKV1QiLCJvcmlnaW4iOiJFYXJ0aGRhdGEgTG9naW4iLCJzaWciOiJlZGxqd3RwdWJrZXlfb3BzIiwiYWxnIjoiUlMyNTYifQ.eyJ0eXBlIjoiVXNlciIsInVpZCI6InNlYmtyYW50eiIsImV4cCI6MTc0ODMwNzE5NCwiaWF0IjoxNzQzMTIzMTk0LCJpc3MiOiJodHRwczovL3Vycy5lYXJ0aGRhdGEubmFzYS5nb3YiLCJpZGVudGl0eV9wcm92aWRlciI6ImVkbF9vcHMiLCJhY3IiOiJlZGwiLCJhc3N1cmFuY2VfbGV2ZWwiOjN9.CTnC0Do3llf-wt_hba-OkGJBhXzKRshWBFpK4cx3xtJaLauLS7SiAeUrMR1WqAbq9h4R30E8PUCVnnHRMZd5uf5D6VTXxhhqEVT-4yUt33Ji1Q6pzHUwIb30uqKMkggxb_n4gL-8s3oot4b6PwutiU4bgsZX_YALakTeLHnLg8Ry9r9zVFmOJeorYgCpWRsx0XdqT-_YNmYA8MrK9RNZ3FmFh2Hs3_xN_KPBgMGEb6jpNciBQiir1cjvFQuBPWGP-Eix1PfmBN-DJuKXdp35tKGduJtUTpKxJ-n_ZJLCgJZ5Jw63UewHJduu0kziPy3IYBO8ufMkufv3vv_uSyvK7A"
-# NL23 <- blackmarbler::bm_raster(roi_sf = NUTS3_ext_hull,
-#                   product_id = "VNP46A4",
-#                   date = "2023",
-#                   bearer = bearer) |>
-#   terra::aggregate(fact = 4, fun = "sum")
-# NL23 <- NL23 |> as.data.frame(xy = TRUE) |> fsubset(t2023 > 0)
-# qs::qsave(NL23, "data/NL23_ECA_agg.qs")
-NL23 <- qs::qread("data/NL23_ECA_agg.qs")
-
-# Find activity centroids
-m <- st_within(st_as_sf(NL23, coords = c("x", "y"), crs = 4326), NUTS3_ext)
-NL23 %<>% fsubset(vlengths(m) > 0)
-NL23$nuts_row <- as.integer(ffirst(m[vlengths(m) > 0]))
-rm(m)
-NL23 %<>% collap( ~ nuts_row, w = ~ t2023)
-# Inspect
-qsu(NL23)
-# NL23 |> st_as_sf(coords = c("x", "y"), crs = 4326) |> 
-#   mapview::mapview(zcol = "t2023", layer.name = "Nightlights 2023") + 
-#   mapview::mapview(NUTS3_ext)
-# # Removing shapes for which there are no (non-zero) nightlights (Estonia north)
-# NUTS3_ext |> ss(setdiff(seq_row(NUTS3_ext), NL23$nuts_row)) |> mapview::mapview()
-NUTS3_ext %<>% ss(NL23$nuts_row)
-
-# Centroids not in the shape
-not_inside <- which(!s2::s2_within(with(NL23, s2::s2_lnglat(x, y)), NUTS3_ext$geometry))
-
-# Getting nearest point
-nearest_points <- st_nearest_points(NUTS3_ext[not_inside, ],
-  NL23[not_inside, ] |> st_as_sf(coords = c("x", "y"), crs = 4326), pairwise = TRUE) |> 
-  st_cast("POINT", group_or_split = FALSE, warn = FALSE) |> st_as_sf()
-  
-# NL23[not_inside, ] |> 
-#   st_as_sf(coords = c("x", "y"), crs = 4326) |> 
-#   mapview::mapview(zcol = "t2023", layer.name = "Nightlights 2023") + 
-#   mapview::mapview(NUTS3_ext[not_inside, ]) +
-#   mapview::mapview(nearest_points)
-
-# Replacing 
-set(NL23, not_inside, c("x", "y"), mctl(st_coordinates(nearest_points)))
-
-tfm(NUTS3_ext) <- frename(NL23, x = lon, y = lat, t2023 = nightlights)
-saveRDS(NUTS3_ext, "data/NUTS3_ext.rds")
+plot(ECA_centroids[, "shapeISO"])
+# mapview::mapview(ECA_centroids)
 
 # Now Computing Distance Matrix
-source("code/helpers.R")
 library(osrm)
+split_large_dist_matrix <- function(data, chunk_size = 100, verbose = FALSE) {
+  n = nrow(data)
+  res_list = list()
+  
+  # Loop over each chunk to compute the pairwise distances and travel times
+  count = 0
+  for (i in seq(1, n, by = chunk_size)) {
+    for (j in seq(1, n, by = chunk_size)) {
+      # Define the row indices for the current chunks
+      rows_i = i:min(i + chunk_size - 1, n)
+      rows_j = j:min(j + chunk_size - 1, n)
+      
+      # Extract the data for the current chunks
+      ds_i = data[rows_i, ]
+      ds_j = data[rows_j, ]
+      
+      if(verbose) {
+        count = count + 1L
+        cat(count," ")
+      }
+      
+      # Perform the API call for the current chunks
+      r_ij = osrmTable(src = ds_i, dst = ds_j, measure = c('duration', 'distance'))
+      
+      # Store the result in a list for later combination
+      res_list[[paste(i, j, sep = "_")]] = r_ij
+    }
+  }
+  
+  # Combine the results from the list into one large matrix for durations and distances
+  res_sources = matrix(NA, n, 2)
+  res_destinations = matrix(NA, n, 2)
+  res_durations = matrix(NA, n, n)
+  res_distances = matrix(NA, n, n)
+  for (i in seq(1, n, by = chunk_size)) {
+    for (j in seq(1, n, by = chunk_size)) {
+      rows_i = i:min(i + chunk_size - 1, n)
+      rows_j = j:min(j + chunk_size - 1, n)
+      
+      # Retrieve the result from the list
+      r_ij = res_list[[paste(i, j, sep = "_")]]
+      
+      # Place the result into the corresponding location in the matrix
+      res_sources[rows_i, ] = qM(r_ij$sources)
+      res_destinations[rows_j, ] = qM(r_ij$destinations)
+      res_durations[rows_i, rows_j] = r_ij$durations
+      res_distances[rows_i, rows_j] = r_ij$distances
+    }
+  }
+  
+  # Create a result list to return
+  res = list(
+    sources = qDF(copyAttrib(mctl(res_sources), data)),
+    destinations = qDF(copyAttrib(mctl(res_destinations), data)),
+    durations = res_durations,
+    distances = res_distances
+  )
+  
+  rn = rownames(res$sources)
+  if(length(rn) && suppressWarnings(!identical(as.integer(rn), seq_along(rn)))) {
+    dimnames(res$durations) <- dimnames(res$distances) <- list(rn, rn)
+  }
+  
+  return(res)
+}
 
-centroids <- qDF(qM(fselect(qDF(NUTS3_ext), nuts_id, lon, lat), 1))
+centroids <- ECA_centroids |> 
+  ftransform(st_coordinates(geometry) |> mctl() |> set_names(c("lon", "lat"))) |>
+  unclass() |> fselect(shapeISO, lon, lat) |> qM(1) |> qDF()
+  
 dist <- split_large_dist_matrix(centroids)
 anyNA(dist$distances)
 anyNA(dist$durations)
@@ -172,31 +101,44 @@ setrename(dist, sources = starts)
 
 # Compute travel cost
 dist$cents_per_ton_km <- exp(4.650 - 0.395 * log(dist$distances / dist$durations * 60 / 1000) - 
-                                     0.064 * log(dist$distances / 1000) + 
-                                     0.024 * outer(NUTS3_ext$cntr_code, NUTS3_ext$cntr_code, "!="))
+                               0.064 * log(dist$distances / 1000) + 
+                               0.024 * outer(ECA_centroids$countrycode, ECA_centroids$countrycode, "!="))
 diag(dist$cents_per_ton_km) <- 0
 dist$dollars_per_ton <- dist$cents_per_ton_km * dist$distances / 10000
 
-saveRDS(dist, "data/NUTS3_ext_distances_and_costs.rds")
+saveRDS(dist, "data/ECA_centroids_distances_and_costs.rds")
+
+diag(dist$cents_per_ton_km) <- NA
+descr(vec(dist$cents_per_ton_km))
+
+diag(dist$dollars_per_ton) <- NA
+descr(vec(dist$dollars_per_ton))
+
+result <- dist |>
+  atomic_elem() |>
+  unlist2d("variable", "from") |>
+  pivot("from", names = list(from = "variable", to = "to"), how = "r") |>
+  fsubset(from != to) |>
+  fmutate(distances = distances / 1000) |>
+  frename(shapeISO_o = from,
+          shapeISO_d = to,
+          distance_km = distances,
+          duration_min = durations)
+
+fnobs(result)
+
+result |> fwrite("data/ECA_centroids_distances_and_costs.csv")
+
+# Test joining to STATA Data
 
 
-
-
-
-# # Fetch nightlights for NUTS1 regions
-# NUTS1 <- NUTS |> subset(levl_code == 1) |> st_transform(4326)
-# #### Define NASA bearer token
-# bearer <- "eyJ0eXAiOiJKV1QiLCJvcmlnaW4iOiJFYXJ0aGRhdGEgTG9naW4iLCJzaWciOiJlZGxqd3RwdWJrZXlfb3BzIiwiYWxnIjoiUlMyNTYifQ.eyJ0eXBlIjoiVXNlciIsInVpZCI6InNlYmtyYW50eiIsImV4cCI6MTc0ODMwNzE5NCwiaWF0IjoxNzQzMTIzMTk0LCJpc3MiOiJodHRwczovL3Vycy5lYXJ0aGRhdGEubmFzYS5nb3YiLCJpZGVudGl0eV9wcm92aWRlciI6ImVkbF9vcHMiLCJhY3IiOiJlZGwiLCJhc3N1cmFuY2VfbGV2ZWwiOjN9.CTnC0Do3llf-wt_hba-OkGJBhXzKRshWBFpK4cx3xtJaLauLS7SiAeUrMR1WqAbq9h4R30E8PUCVnnHRMZd5uf5D6VTXxhhqEVT-4yUt33Ji1Q6pzHUwIb30uqKMkggxb_n4gL-8s3oot4b6PwutiU4bgsZX_YALakTeLHnLg8Ry9r9zVFmOJeorYgCpWRsx0XdqT-_YNmYA8MrK9RNZ3FmFh2Hs3_xN_KPBgMGEb6jpNciBQiir1cjvFQuBPWGP-Eix1PfmBN-DJuKXdp35tKGduJtUTpKxJ-n_ZJLCgJZ5Jw63UewHJduu0kziPy3IYBO8ufMkufv3vv_uSyvK7A"
-# NL21 <- vector("list", length = nrow(NUTS1))
-# for (i in seq_along(NL21)[-(1:124)]) {
-#   print(NUTS1$nuts_name[i])
-#   NL21[[i]] <- bm_raster(roi_sf = NUTS1[i,1],
-#                          product_id = "VNP46A4",
-#                          date = "2021",
-#                          bearer = bearer) |>
-#                as.data.frame(xy = TRUE)
-# }
-# names(NL21) <- NUTS1$nuts_id
-# qs::qsave(NL21, "data/NL21.qs")
+# # Test with shapes
+# library(sf)
+# ECA_shp <- st_read("data/ECA_shp_new/ECA.shp")
+# ECA_shp %<>% st_make_valid()
 # 
-# NL21 <- rowbind(NL21, idcol = "NUTS1")
+# ECA_shp_poly <- ECA_shp |>
+#   dplyr::group_by(shapeISO) |>
+#   dplyr::summarise(geometry = st_combine(geometry)) |>
+#   st_cast("MULTIPOINT") |>
+#   st_cast("POLYGON")
