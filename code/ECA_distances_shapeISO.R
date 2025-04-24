@@ -12,7 +12,7 @@ ECA_centroids |>
 
 ECA_centroids %<>% st_as_sf(coords = c("CX", "CY"), crs = 4326)
 
-plot(ECA_centroids[, "shapeISO"])
+# plot(ECA_centroids[, "shapeISO"])
 # mapview::mapview(ECA_centroids)
 
 # Now Computing Distance Matrix
@@ -129,16 +129,10 @@ fnobs(result)
 
 result |> fwrite("data/ECA_centroids_distances_and_costs.csv")
 
-# Test joining to STATA Data
+# Test joining to database
+
+ECA <- read_dta("data/ECA_database_shapeISO.dta")
+ECA |> join(result, on = c("shapeISO" = "shapeISO_o")) |> invisible() 
+ECA |> join(result, on = c("shapeISO" = "shapeISO_d")) |> invisible() 
 
 
-# # Test with shapes
-# library(sf)
-# ECA_shp <- st_read("data/ECA_shp_new/ECA.shp")
-# ECA_shp %<>% st_make_valid()
-# 
-# ECA_shp_poly <- ECA_shp |>
-#   dplyr::group_by(shapeISO) |>
-#   dplyr::summarise(geometry = st_combine(geometry)) |>
-#   st_cast("MULTIPOINT") |>
-#   st_cast("POLYGON")
