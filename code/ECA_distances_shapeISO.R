@@ -101,19 +101,42 @@ setrename(dist, sources = starts)
 
 # Compute travel cost
 dist$cents_per_ton_km <- exp(4.650 - 0.395 * log(dist$distances / dist$durations * 60 / 1000) - 
-                               0.064 * log(dist$distances / 1000) + 
-                               0.024 * outer(ECA_centroids$countrycode, ECA_centroids$countrycode, "!="))
+                             0.064 * log(dist$distances / 1000) + 
+                             0.024 * outer(ECA_centroids$countrycode, ECA_centroids$countrycode, "!="))
 diag(dist$cents_per_ton_km) <- 0
 dist$dollars_per_ton <- dist$cents_per_ton_km * dist$distances / 10000
 
+set_diag <- `diag<-`
+descr(vec(set_diag(dist$cents_per_ton_km, NA)))
+descr(vec(set_diag(dist$dollars_per_ton, NA)))
+
+# Counterfactual 1: Upgrading all roads to allow speeds of 70 km/h
+
+descr(vec(dist$distances / dist$durations * 60 / 1000))
+descr(vec(pmax(70, dist$distances / dist$durations * 60 / 1000)))
+
+dist$cents_per_ton_km_g70kmh <- exp(4.650 - 0.395 * log(pmax(70, dist$distances / dist$durations * 60 / 1000)) - 
+                                    0.064 * log(dist$distances / 1000) + 
+                                    0.024 * outer(ECA_centroids$countrycode, ECA_centroids$countrycode, "!="))
+diag(dist$cents_per_ton_km_g70kmh) <- 0
+dist$dollars_per_ton_g70kmh <- dist$cents_per_ton_km_g70kmh * dist$distances / 10000
+
+descr(vec(set_diag(dist$cents_per_ton_km_g70kmh, NA)))
+descr(vec(set_diag(dist$dollars_per_ton_g70kmh, NA)))
+
+# Counterfactural 2: Eliminating border frictions
+
+dist$cents_per_ton_km_no_border <- exp(4.650 - 0.395 * log(dist$distances / dist$durations * 60 / 1000) - 
+                                       0.064 * log(dist$distances / 1000))
+diag(dist$cents_per_ton_km_no_border) <- 0
+dist$dollars_per_ton_no_border <- dist$cents_per_ton_km_no_border * dist$distances / 10000
+
+descr(vec(set_diag(dist$cents_per_ton_km_no_border, NA)))
+descr(vec(set_diag(dist$dollars_per_ton_no_border, NA)))
+
 saveRDS(dist, "data/ECA_centroids_distances_and_costs.rds")
 
-diag(dist$cents_per_ton_km) <- NA
-descr(vec(dist$cents_per_ton_km))
-
-diag(dist$dollars_per_ton) <- NA
-descr(vec(dist$dollars_per_ton))
-
+# Combining results
 result <- dist |>
   atomic_elem() |>
   unlist2d("variable", "from") |>
