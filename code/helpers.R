@@ -363,6 +363,56 @@ proj_crs_from_bbox <- function(bbox) {
   paste0('EPSG:', epsg_code)
 }
 
+
+# ──────────────────────────────────────────────────────────────────────────
+# snap_lonlat()  ── st_snap() that also works for lon/lat data
+# ──────────────────────────────────────────────────────────────────────────
+# x           sf / sfc – the geometries to be snapped
+# y           sf / sfc – the geometry that x should snap to
+# tol         numeric  – snapping tolerance in metres (or CRS units if you
+#                         supply your own 'crs_out')
+# crs_out     integer  – EPSG code of the planar CRS to be used.  If NULL
+#                         the function auto-picks a UTM zone that covers the
+#                         centroid of x.
+# return      snapped x in its *original* CRS
+snap_lonlat <- function(x, y, tol, crs_out = NULL) {
+  
+  # 1. determine a projected CRS -------------------------------------------
+  if (is.null(crs_out)) {
+    # pick UTM zone from centroid of x
+    lon <- st_coordinates(st_centroid(st_union(x)))[, "X"]
+    utm_zone <- floor((lon + 180) / 6) + 1
+    crs_out <- 32600 + utm_zone          # WGS84 / UTM zone N
+  }
+  
+  # 2. project both layers --------------------------------------------------
+  x_proj <- st_transform(x, crs_out)
+  y_proj <- st_transform(y, crs_out)
+  
+  # 3. snap in projected space ---------------------------------------------
+  snapped_proj <- st_snap(x_proj, y_proj, tolerance = tol)
+  
+  # 4. re-project back to the original CRS ---------------------------------
+  st_transform(snapped_proj, st_crs(x))
+}
+
+gap_fix_snap <- function(polys, tol){
+  # polys  : sf polygon layer
+  # tol    : maximum distance (in CRS units) under which two vertices
+  #          are considered the “same” and get merged.
+  
+  polys <- st_make_valid(polys)              # 1. repair self-intersections
+  border <- st_union(polys)                  #   (one geometry with every
+  #    vertex we want to snap to)
+  
+  snapped <- snap_lonlat(polys, border, tol = tol)
+  
+  # 2. dissolve tiny overlaps that can be produced by the snap
+  snapped <- st_make_valid(snapped)          #   keep geometries clean
+  snapped <- st_collection_extract(snapped, "POLYGON")
+  snapped
+}
+
 deg_m <- function(m) m / (40075017 / 360)  
 
 m_to_rad <- function(m) m / 6371000 # Average Earth radius in meters
