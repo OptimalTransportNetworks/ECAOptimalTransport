@@ -1,7 +1,7 @@
 library(fastverse)
 set_collapse(mask = c("manip", "helper", "special"), nthreads = 4)
-fastverse_extend(qs, sf, units, install = TRUE)
-source("code/helpers.R")
+fastverse_extend(qs, sf, s2, units, install = TRUE)
+source("code/fs_build/helpers.R")
 fastverse_conflicts()
 
 shape <- qread("data/grid_network/cells_shape.qs")
@@ -63,14 +63,28 @@ buffers <- sapply(countries, function(x) {
 for (c in countries) {
   cat(c, " ")
   ind <- unique(c(shape$iso %==% c, buffers[[c]]))
-  subset(qDT(shape), ind, cell_id, subcell_id, iso, pwx, pwy, 
+  cs <- subset(qDT(shape), ind, cell_id, subcell_id, iso, pwx, pwy, 
          predicted_GCP_const_2017_USD, predicted_GCP_const_2017_PPP, pop_cell, national_population,
          cell_GDPC_const_2017_USD, cell_GDPC_const_2017_PPP, is_cell_censored, 
          open_water, rugg, pop_wpop, pop_wpop_km2, cost_km) |> 
-    fwrite(sprintf("data/grid_network/country/%s_nodes.csv", c))
-  subset(qDT(routes), from %in% ind | to %in% ind, 
-               from:to_lat, fx:ty,  duration, distance, sp_distance:cost) |> 
-    fwrite(sprintf("data/grid_network/country/%s_edges.csv", c))
+        mutate(is_buff = ind %in% buffers[[c]])
+  
+  # Creating product specification
+  cs$own_product = cs %in% subset(pop_cell > 200e3,
+    .x = largest_within_radius(cs, c("pwx", "pwy"), size = "pop_cell", radius_km = 80))
+  print(table(cs$own_product))
+  
+  if(sum(cs$own_product) > 15) cs[own_product == TRUE, own_product := replace(own_product, -topn(pop_cell, 15), FALSE)]
+  cs[own_product == FALSE, product := unattrib(cut(pop_cell, quantile(pop_cell, seq(0, 1, 0.2))))]
+  cs[own_product == TRUE, product := seq_along(pop_cell) + 5L]
+
+  fwrite(cs, sprintf("data/grid_network/country/%s_nodes.csv", c))
+  
+  subset(qDT(routes), from %in% ind & to %in% ind, 
+         from:to_lat, fx:ty,  duration, distance, sp_distance:cost) |> 
+  mutate(is_buff = from %in% buffers[[c]] | to %in% buffers[[c]], 
+         from = match(from, ind), to = match(to, ind)) |> 
+  fwrite(sprintf("data/grid_network/country/%s_edges.csv", c))
 }
 
 # Save Overall
