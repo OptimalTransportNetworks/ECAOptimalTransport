@@ -182,12 +182,14 @@ descr(vec(ratios))
 # Now counterfactual: add links
 edges |> with(distance / sp_distance) |> mean()
 edges |> with(duration / sp_distance) |> mean()
+edges |> with((distance / 1000) / (duration / 60)) |> descr()
 
 add_links %<>% mutate(sp_distance = st_length(geometry), 
                       distance = 1.444168 * sp_distance,
-                      duration = 0.00174973 * sp_distance)
+                      duration = (distance/1000) / 90 * 60) # 90kmh # Same as Existing: 0.00174973 * sp_distance
 
 descr(add_links$duration)
+add_links |> with((distance / 1000) / (duration / 60)) |> descr()
 descr(edges$duration)
 sum(add_links$distance) / sum(edges$distance)
 
