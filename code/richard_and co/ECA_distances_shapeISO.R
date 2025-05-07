@@ -158,4 +158,105 @@ ECA <- read_dta("data/ECA_database_shapeISO.dta")
 ECA |> join(result, on = c("shapeISO" = "shapeISO_o")) |> invisible() 
 ECA |> join(result, on = c("shapeISO" = "shapeISO_d")) |> invisible() 
 
+# Further counterfactuals: Adding new links
+
+ECA_centroids <- fread("data/ECA_centroids.csv")
+ECA_centroids %<>% st_as_sf(coords = c("lon", "lat"), crs = 4326)
+dist <- readRDS("data/ECA_centroids_distances_and_costs.rds")
+net <- new.env()
+load("data/ECA_centroids_network/ECA_centroids_network.RData", envir = net)
+add_links <- net$add_links
+edges <- net$edges
+net <- sfnetworks::as_sfnetwork(edges, directed = FALSE)
+nodes <- st_as_sf(net, "nodes")
+
+# Match centroids to nodes
+ECA_centroids$node <- dapply(st_distance(nodes, ECA_centroids), which.min)
+
+# Check Ratios with Simulations
+ratios <- sfnetworks::st_network_cost(net, weights = "duration", direction = "all")[ECA_centroids$node, ECA_centroids$node] / dist$durations
+descr(vec(ratios))
+ratios[!is.finite(ratios) | ratios < 1] <- 1
+descr(vec(ratios))
+
+# Now counterfactual: add links
+edges |> with(distance / sp_distance) |> mean()
+edges |> with(duration / sp_distance) |> mean()
+
+add_links %<>% mutate(sp_distance = st_length(geometry), 
+                      distance = 1.444168 * sp_distance,
+                      duration = 0.00174973 * sp_distance)
+
+descr(add_links$duration)
+descr(edges$duration)
+sum(add_links$distance) / sum(edges$distance)
+
+# Creating extended network
+net_ext <- sfnetworks::as_sfnetwork(rbind(select(edges, -passes), 
+                                          select(add_links, -id)), directed = FALSE)
+
+# Get index for matching
+ind <- fmatch(mctl(st_coordinates(st_as_sf(net_ext, "nodes"))), 
+              mctl(st_coordinates(nodes))) |> na_rm()
+
+# New distances and durations
+new_distances <- sfnetworks::st_network_cost(net_ext, weights = "distance", direction = "all")[ind, ind]
+new_durations <- sfnetworks::st_network_cost(net_ext, weights = "duration", direction = "all")[ind, ind]
+
+# Ratios
+new_distance_ratios <- new_distances / sfnetworks::st_network_cost(net, weights = "distance", direction = "all")
+descr(vec(new_distance_ratios))
+new_distance_ratios[!is.finite(new_distance_ratios)] <- 1
+new_distance_ratios[new_distance_ratios < 0.1] <- 0.1
+descr(vec(new_distance_ratios))
+
+new_duration_ratios <- new_durations / sfnetworks::st_network_cost(net, weights = "duration", direction = "all")
+descr(vec(new_duration_ratios))
+new_duration_ratios[!is.finite(new_duration_ratios)] <- 1
+new_duration_ratios[new_duration_ratios < 0.1] <- 0.1
+descr(vec(new_duration_ratios))
+
+# Now Applying counterfactuals
+dist$distances_net_ext <- dist$distances * new_distance_ratios[ECA_centroids$node, ECA_centroids$node]
+dist$durations_net_ext <- dist$durations * new_duration_ratios[ECA_centroids$node, ECA_centroids$node]
+
+# Compute travel cost
+dist$cents_net_ext_per_ton_km <- exp(4.650 - 0.395 * log(dist$distances_net_ext / dist$durations_net_ext * 60 / 1000) - 
+                                     0.064 * log(dist$distances_net_ext / 1000) + 
+                                     0.024 * outer(ECA_centroids$countrycode, ECA_centroids$countrycode, "!="))
+diag(dist$cents_net_ext_per_ton_km) <- 0
+dist$dollars_net_ext_per_ton <- dist$cents_net_ext_per_ton_km * dist$distances_net_ext / 10000
+
+set_diag <- `diag<-`
+descr(vec(set_diag(dist$cents_net_ext_per_ton_km, NA)))
+descr(vec(set_diag(dist$dollars_net_ext_per_ton, NA)))
+
+# No border frictions
+
+dist$cents_net_ext_per_ton_km_no_border <- exp(4.650 - 0.395 * log(dist$distances_net_ext / dist$durations_net_ext * 60 / 1000) - 
+                                               0.064 * log(dist$distances_net_ext / 1000))
+diag(dist$cents_net_ext_per_ton_km_no_border) <- 0
+dist$dollars_net_ext_per_ton_no_border <- dist$cents_net_ext_per_ton_km_no_border * dist$distances_net_ext / 10000
+
+descr(vec(set_diag(dist$cents_net_ext_per_ton_km_no_border, NA)))
+descr(vec(set_diag(dist$dollars_net_ext_per_ton_no_border, NA)))
+
+saveRDS(dist, "data/ECA_centroids_distances_and_costs.rds")
+
+
+# Combining results
+result <- dist |>
+  atomic_elem() |>
+  unlist2d("variable", "from") |>
+  pivot("from", names = list(from = "variable", to = "to"), how = "r") |>
+  fsubset(from != to) |>
+  fmutate(distances = distances / 1000) |>
+  frename(shapeISO_o = from,
+          shapeISO_d = to,
+          distance_km = distances, distance_net_ext_km = distances_net_ext,
+          duration_min = durations, duration_net_ext_min = durations_net_ext)
+
+fnobs(result)
+
+result |> fwrite("data/ECA_centroids_distances_and_costs.csv")
 
