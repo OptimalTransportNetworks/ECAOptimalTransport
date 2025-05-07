@@ -101,8 +101,8 @@ setrename(dist, sources = starts)
 
 # Compute travel cost
 dist$cents_per_ton_km <- exp(4.650 - 0.395 * log(dist$distances / dist$durations * 60 / 1000) - 
-                               0.064 * log(dist$distances / 1000) + 
-                               0.024 * outer(ECA_centroids$countrycode, ECA_centroids$countrycode, "!="))
+                             0.064 * log(dist$distances / 1000) + 
+                             0.024 * outer(ECA_centroids$countrycode, ECA_centroids$countrycode, "!="))
 diag(dist$cents_per_ton_km) <- 0
 dist$dollars_per_ton <- dist$cents_per_ton_km * dist$distances / 10000
 
