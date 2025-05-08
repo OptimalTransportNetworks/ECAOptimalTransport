@@ -42,6 +42,8 @@ rm(pop_wpop)
 shape$cost_km <- exp(log(120e3) + 0.12 * log(shape$pop_wpop_km2+1) + 0.085 * log(shape$rugg+1))
 routes$cost_km <- (shape$cost_km[routes$from] + shape$cost_km[routes$to]) / 2
 routes$cost <- routes$cost_km * routes$sp_distance / 1e6
+descr(routes$cost_km)
+descr(routes$cost)
 
 # Now Getting 120km buffer around each country
 countries <- wbstats::wb_cachelist$countries %$% iso3c[region_iso3c %==% "ECS"] %>% 
@@ -52,7 +54,7 @@ table(shape$iso)
 # No buffers version
 for (c in countries) {
   cat(c, " ")
-  ind <- shape$iso %==% c
+  ind <- unique(shape$iso %==% c)
   if(length(ind) <= 2) next
   cs <- subset(qDT(shape), ind, cell_id, subcell_id, iso, pwx, pwy, 
                predicted_GCP_const_2017_USD, predicted_GCP_const_2017_PPP, pop_cell, national_population,
@@ -72,15 +74,14 @@ for (c in countries) {
   fwrite(cs, sprintf("data/grid_network/country_nobuff/%s_nodes.csv", c))
   
   subset(qDT(routes), from %in% ind & to %in% ind, 
-         from:to_lat, fx:ty,  duration, distance, sp_distance:cost) |> 
-    mutate(from = match(from, ind), to = match(to, ind)) |> 
+         from:to_lat, fx:ty, duration, distance, sp_distance:cost) |> 
+    mutate(from = ckmatch(from, ind), to = ckmatch(to, ind)) |> 
     fwrite(sprintf("data/grid_network/country_nobuff/%s_edges.csv", c))
 }
 
-
 # Takes long for Russia
 buffers <- sapply(countries, function(x) {
-  ind <- shape$iso %==% x
+  ind <- unique(shape$iso %==% x)
   cs <- ss(shape, ind)
   dmat <- st_distance(shape, cs) %/=% 1e3
   lapply(mctl(dmat), function(y) which(y < 100)) |> 
@@ -92,6 +93,7 @@ buffers <- sapply(countries, function(x) {
 for (c in countries) {
   cat(c, " ")
   ind <- unique(c(shape$iso %==% c, buffers[[c]]))
+  if(length(ind) <= 2) next
   cs <- subset(qDT(shape), ind, cell_id, subcell_id, iso, pwx, pwy, 
          predicted_GCP_const_2017_USD, predicted_GCP_const_2017_PPP, pop_cell, national_population,
          cell_GDPC_const_2017_USD, cell_GDPC_const_2017_PPP, is_cell_censored, 
@@ -113,7 +115,7 @@ for (c in countries) {
   subset(qDT(routes), from %in% ind & to %in% ind, 
          from:to_lat, fx:ty,  duration, distance, sp_distance:cost) |> 
   mutate(is_buff = from %in% buffers[[c]] | to %in% buffers[[c]], 
-         from = match(from, ind), to = match(to, ind)) |> 
+         from = ckmatch(from, ind), to = ckmatch(to, ind)) |> 
   fwrite(sprintf("data/grid_network/country/%s_edges.csv", c))
 }
 
