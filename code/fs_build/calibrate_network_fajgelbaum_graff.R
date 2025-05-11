@@ -39,9 +39,28 @@ shape$pop_wpop_km2 <- unattrib(shape$pop_wpop / (st_area(shape) / 1e6))
 rm(pop_wpop)
 
 # Computing infrastructure building cost following Collier et. al. (2016)
-shape$cost_km <- exp(log(120e3) + 0.12 * log(shape$pop_wpop_km2+1) + 0.085 * log(shape$rugg+1))
+# F&S set delta0 so that K = 1000 in each country
+get_delta0_ctry <- function(ctry) {
+  base <- 0.12 * log(shape$rugg+1) + 0.085 * log(shape$pop_wpop_km2+1)
+  ind <- which(shape$iso[routes$from] == ctry & shape$iso[routes$to] == ctry)
+  objective <- function(delta0) {
+    cost_kmh <- exp(log(delta0) + base)
+    cost_kmh <- (cost_kmh[routes$from] + cost_kmh[routes$to]) / 2
+    abs(sum(cost_kmh[ind] * routes$time_efficiency[ind]) - 1000)
+  }
+  c(optimise(objective, c(0, 1e8), tol = 1e-12), list(n = length(ind)))
+}
+
+costs <- sapply(unique(shape$iso), get_delta0_ctry, simplify = FALSE) |> 
+  rowbind(idcol = "ctry", return = "data.frame")
+
+# Old: 
+# shape$cost_km <- exp(log(120e3) + 0.12 * log(shape$rugg+1) + 0.085 * log(shape$pop_wpop_km2+1))
+# routes$cost_km <- (shape$cost_km[routes$from] + shape$cost_km[routes$to]) / 2
+# routes$cost <- routes$cost_km * routes$sp_distance / 1e6
+shape$cost_km <- exp(log(costs$minimum[ckmatch(shape$iso, costs$ctry)]) + 0.12 * log(shape$rugg+1) + 0.085 * log(shape$pop_wpop_km2+1))
 routes$cost_km <- (shape$cost_km[routes$from] + shape$cost_km[routes$to]) / 2
-routes$cost <- routes$cost_km * routes$sp_distance / 1e6
+routes$cost <- routes$cost_km * routes$time_efficiency
 descr(routes$cost_km)
 descr(routes$cost)
 
@@ -92,8 +111,9 @@ buffers <- sapply(countries, function(x) {
 # Generate Country Files
 for (c in countries) {
   cat(c, " ")
-  ind <- unique(c(shape$iso %==% c, buffers[[c]]))
+  ind <- shape$iso %==% c
   if(length(ind) <= 2) next
+  ind <- unique(c(ind, buffers[[c]]))
   cs <- subset(qDT(shape), ind, cell_id, subcell_id, iso, pwx, pwy, 
          predicted_GCP_const_2017_USD, predicted_GCP_const_2017_PPP, pop_cell, national_population,
          cell_GDPC_const_2017_USD, cell_GDPC_const_2017_PPP, is_cell_censored, 
@@ -105,7 +125,14 @@ for (c in countries) {
     .x = largest_within_radius(cs, c("pwx", "pwy"), size = "pop_cell", radius_km = 80))
   print(table(cs$own_product))
   
-  if(sum(cs$own_product) > 15) cs[own_product == TRUE, own_product := replace(own_product, -topn(pop_cell, 15), FALSE)]
+  if(sum(cs$own_product) > 15) {
+    .opr <- copy(cs$own_product)
+    cs[own_product == TRUE, own_product := replace(own_product, -topn(pop_cell, 15), FALSE)]
+    if(cs[, sum(own_product & !is_buff)] < 10) {
+      cs[.opr & !is_buff, own_product := replace(own_product, topn(pop_cell, 10), TRUE)]
+    }
+    rm(.opr)
+  }
   cs[own_product == FALSE, product := unattrib(cut(pop_cell, quantile(pop_cell, seq(0, 1, 0.2)), include.lowest = TRUE))]
   cs[own_product == TRUE, product := seq_along(pop_cell) + 5L]
   if(anyNA(cs$product)) stop("Missing product")
