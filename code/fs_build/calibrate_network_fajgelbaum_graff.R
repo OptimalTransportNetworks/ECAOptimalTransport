@@ -46,22 +46,24 @@ get_delta0_ctry <- function(ctry) {
   objective <- function(delta0) {
     cost_kmh <- exp(log(delta0) + base)
     cost_kmh <- (cost_kmh[routes$from] + cost_kmh[routes$to]) / 2
-    abs(sum(cost_kmh[ind] * routes$time_efficiency[ind]) - 1000)
+    abs(sum(cost_kmh[ind] * routes$time_efficiency[ind]) - 1e6)
   }
   c(optimise(objective, c(0, 1e8), tol = 1e-12), list(n = length(ind)))
 }
 
 costs <- sapply(unique(shape$iso), get_delta0_ctry, simplify = FALSE) |> 
-  rowbind(idcol = "ctry", return = "data.frame")
+  rowbind(idcol = "ctry", return = "data.frame") |> subset(n > 5)
+descr(costs$minimum)
+delta0 <- fmedian(costs$minimum)
 
 # Old: 
 # shape$cost_km <- exp(log(120e3) + 0.12 * log(shape$rugg+1) + 0.085 * log(shape$pop_wpop_km2+1))
 # routes$cost_km <- (shape$cost_km[routes$from] + shape$cost_km[routes$to]) / 2
 # routes$cost <- routes$cost_km * routes$sp_distance / 1e6
-shape$cost_km <- exp(log(costs$minimum[ckmatch(shape$iso, costs$ctry)]) + 0.12 * log(shape$rugg+1) + 0.085 * log(shape$pop_wpop_km2+1))
-routes$cost_km <- (shape$cost_km[routes$from] + shape$cost_km[routes$to]) / 2
-routes$cost <- routes$cost_km * routes$time_efficiency
-descr(routes$cost_km)
+shape$cost_kmh <- exp(log(delta0) + 0.12 * log(shape$rugg+1) + 0.085 * log(shape$pop_wpop_km2+1))
+routes$cost_kmh <- (shape$cost_kmh[routes$from] + shape$cost_kmh[routes$to]) / 2
+routes$cost <- routes$cost_kmh * routes$time_efficiency
+descr(routes$cost_kmh)
 descr(routes$cost)
 
 # Now Getting 120km buffer around each country
@@ -78,7 +80,7 @@ for (c in countries) {
   cs <- subset(qDT(shape), ind, cell_id, subcell_id, iso, pwx, pwy, 
                predicted_GCP_const_2017_USD, predicted_GCP_const_2017_PPP, pop_cell, national_population,
                cell_GDPC_const_2017_USD, cell_GDPC_const_2017_PPP, is_cell_censored, 
-               open_water, rugg, pop_wpop, pop_wpop_km2, cost_km) 
+               open_water, rugg, pop_wpop, pop_wpop_km2, cost_kmh) 
 
   # Creating product specification
   cs$own_product = cs %in% subset(pop_cell > 200e3,
@@ -117,7 +119,7 @@ for (c in countries) {
   cs <- subset(qDT(shape), ind, cell_id, subcell_id, iso, pwx, pwy, 
          predicted_GCP_const_2017_USD, predicted_GCP_const_2017_PPP, pop_cell, national_population,
          cell_GDPC_const_2017_USD, cell_GDPC_const_2017_PPP, is_cell_censored, 
-         open_water, rugg, pop_wpop, pop_wpop_km2, cost_km) |> 
+         open_water, rugg, pop_wpop, pop_wpop_km2, cost_kmh) |> 
         mutate(is_buff = ind %in% buffers[[c]])
   
   # Creating product specification
@@ -150,7 +152,7 @@ for (c in countries) {
 select(qDT(shape), cell_id, subcell_id, iso, pwx, pwy, 
        predicted_GCP_const_2017_USD, predicted_GCP_const_2017_PPP, pop_cell, national_population,
        cell_GDPC_const_2017_USD, cell_GDPC_const_2017_PPP, is_cell_censored, 
-       open_water, rugg, pop_wpop, pop_wpop_km2, cost_km) |> 
+       open_water, rugg, pop_wpop, pop_wpop_km2, cost_kmh) |> 
   fwrite("data/grid_network/ECA_nodes.csv")
 
 select(qDT(routes), from:to_lat, fx:ty,  duration, distance, sp_distance:cost) |> 
