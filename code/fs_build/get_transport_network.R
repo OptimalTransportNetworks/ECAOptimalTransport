@@ -447,6 +447,33 @@ save(nodes, edges, edges_ind, nodes_coord, net, add_links,
      file = "data/transport_network/trans_ECA_network.RData")
 
 
+# FIX: Remove unconnected node
+
+load("data/transport_network/trans_ECA_network.RData")
+net <- as_sfnetwork(edges, directed = FALSE)
+
+# Missing / unconnected node
+setdiff(seq_row(nodes_coord), fmatch(mctl(st_coordinates(st_geometry(net, "nodes"))), nodes_coord))
+# Remove
+ind <- fmatch(mctl(st_coordinates(st_geometry(net, "nodes"))), nodes_coord)
+nodes <- ss(nodes, ind)
+nodes_coord <- nodes |> st_coordinates() |> mctl() |> set_names(c("lon", "lat"))
+sym_dist_mat <- sym_dist_mat[ind, ind]
+sym_time_mat <- sym_time_mat[ind, ind]
+list_elem(dist_ttime_mats) %<>% lapply(ss, ind)
+atomic_elem(dist_ttime_mats) %<>% lapply(ss, ind, ind)
+
+if(!identical(net |> activate("edges") |> tidygraph::as_tibble() |> atomic_elem() |> select(-from, -to), 
+              atomic_elem(edges) |> select(-from, -to))) stop("Mismatch!")
+tfm(edges) <- net |> activate("edges") |> tidygraph::as_tibble() |> atomic_elem() |> select(from, to)
+add_links %<>% ss(-241) # Removing this link
+
+save(nodes, edges, edges_ind, nodes_coord, net, add_links,  
+     cities, cities_rsp_sf, 
+     dist_ttime_mats, sym_dist_mat, sym_time_mat, 
+     file = "data/transport_network/trans_ECA_network.RData")
+
+
 ##########################################################
 # Fetching Simplified Routes (Edges) for Visual Inspection
 ##########################################################
@@ -523,5 +550,4 @@ tm_basemap("OpenTopoMap", zoom = 5) + # CartoDB.Positron
   tm_shape(subset(nodes, !key_city & population <= 0)) + tm_dots(size = 0.08, fill = "grey70") +
   tm_layout(frame = FALSE) #, inner.margins = c(0.1, 0.1, 0.1, 0.1))
 dev.off()
-
 
