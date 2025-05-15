@@ -10,21 +10,6 @@ fastverse_conflicts()
 load("data/transport_network/trans_ECA_network.RData")
 edges_real <- qread("data/transport_network/edges_real_simplified.qs")
 
-# First add a country variable
-countries <- wbstats::wb_cachelist$countries %$% iso3c[region_iso3c == "ECS" | iso3c %in% c("IRQ", "IRN", "SYR")] %>% 
-  c("XKO") %>% setdiff(c("GRL", "ISL", "GBR", "IRL", "NOR", "SWE", "FIN", "FRO", "IMN", "CYP"))
-
-GADM0 <- st_read("/Users/sebastiankrantz/Documents/Data/GADM/gadm_410-levels.gpkg", layer = "ADM_0") |> 
-  base::subset(GID_0 %in% countries) |> st_cast("POLYGON") |>
-  base::subset(st_centroid(geom) |> st_coordinates() |> qDF() |> with(X > -12)) |>
-  rmapshaper::ms_simplify(keep = 0.1) # |> st_make_valid()
-
-ind <- st_within(nodes, GADM0)
-ind[vlengths(ind) == 0] <- NA
-ind <- ffirst(ind)
-nodes$iso3c <- GADM0$GID_0[ind]
-nodes[whichNA(ind), ]
-nodes$iso3c[whichNA(ind)] <- "TUR"
 
 # Plot high gravity roads
 tm_basemap("CartoDB.Positron", zoom = 5) +

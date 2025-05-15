@@ -1,7 +1,7 @@
 library(fastverse)
 set_collapse(mask = c("manip", "helper", "special"), nthreads = 4)
 fastverse_extend(qs, sf, s2, units, stplanr, sfnetworks, osrm, tmap, install = TRUE)
-source("code/helpers.R")
+source("code/fs_build/helpers.R")
 fastverse_conflicts()
 
 ####################################
@@ -467,6 +467,43 @@ if(!identical(net |> activate("edges") |> tidygraph::as_tibble() |> atomic_elem(
               atomic_elem(edges) |> select(-from, -to))) stop("Mismatch!")
 tfm(edges) <- net |> activate("edges") |> tidygraph::as_tibble() |> atomic_elem() |> select(from, to)
 add_links %<>% ss(-241) # Removing this link
+
+# Also adding country information
+countries <- wbstats::wb_cachelist$countries %$% iso3c[region_iso3c == "ECS" | iso3c %in% c("IRQ", "IRN", "SYR")] %>% 
+  c("XKO") %>% setdiff(c("GRL", "ISL", "GBR", "IRL", "NOR", "SWE", "FIN", "FRO", "IMN", "CYP"))
+
+GADM0 <- st_read("/Users/sebastiankrantz/Documents/Data/GADM/gadm_410-levels.gpkg", layer = "ADM_0") |> 
+  base::subset(GID_0 %in% countries) |> st_cast("POLYGON") |>
+  base::subset(st_centroid(geom) |> st_coordinates() |> qDF() |> with(X > -12)) |>
+  rmapshaper::ms_simplify(keep = 0.1) # |> st_make_valid()
+
+ind <- st_within(nodes, GADM0)
+ind[vlengths(ind) == 0] <- NA
+ind <- ffirst(ind)
+nodes$iso3c <- GADM0$GID_0[ind]
+nodes[whichNA(ind), ]
+nodes$iso3c[whichNA(ind)] <- "TUR"
+
+# Check matches
+all(line2df(edges) %>% select(fx, fy) %in% mctl(st_coordinates(nodes)))
+all(line2df(edges) %>% select(tx, ty) %in% mctl(st_coordinates(nodes)))
+edges$from <- fmatch(line2df(edges) %>% select(fx, fy), mctl(st_coordinates(nodes)))
+edges$to <- fmatch(line2df(edges) %>% select(fx, fy), mctl(st_coordinates(nodes)))
+edges$from_ctry <- nodes$iso3c[edges$from]
+edges$to_ctry <- nodes$iso3c[edges$to]
+setcolorder(edges, .c(from, from_ctry, to, to_ctry))
+edges_ind <- qDF(edges) |> select(from, to) |> qM()
+
+all(line2df(add_links) %>% select(fx, fy) %in% mctl(st_coordinates(nodes)))
+all(line2df(add_links) %>% select(tx, ty) %in% mctl(st_coordinates(nodes)))
+add_links$from <- fmatch(line2df(add_links) %>% select(fx, fy), mctl(st_coordinates(nodes)))
+add_links$to <- fmatch(line2df(add_links) %>% select(tx, ty), mctl(st_coordinates(nodes)))
+add_links$from_ctry <- nodes$iso3c[add_links$from]
+add_links$to_ctry <- nodes$iso3c[add_links$to]
+setcolorder(add_links, .c(id, from, from_ctry, to, to_ctry))
+
+descr(diag(st_distance(nodes, st_as_sf(dist_ttime_mats$sources, coords = c("lon", "lat"), crs = 4326))))
+descr(diag(st_distance(nodes, st_as_sf(dist_ttime_mats$destinations, coords = c("lon", "lat"), crs = 4326))))
 
 save(nodes, edges, edges_ind, nodes_coord, net, add_links,  
      cities, cities_rsp_sf, 
