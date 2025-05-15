@@ -505,6 +505,8 @@ setcolorder(add_links, .c(id, from, from_ctry, to, to_ctry))
 descr(diag(st_distance(nodes, st_as_sf(dist_ttime_mats$sources, coords = c("lon", "lat"), crs = 4326))))
 descr(diag(st_distance(nodes, st_as_sf(dist_ttime_mats$destinations, coords = c("lon", "lat"), crs = 4326))))
 
+net <- sfnetwork(nodes, edges, directed = FALSE)
+
 save(nodes, edges, edges_ind, nodes_coord, net, add_links,  
      cities, cities_rsp_sf, 
      dist_ttime_mats, sym_dist_mat, sym_time_mat, 
