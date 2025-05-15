@@ -27,8 +27,9 @@ settfm(add_links, distance = sp_distance / aere)
 
 # Shortest Paths ----------------------------------------------------------
 
-if(!net |> activate("edges") |> tidygraph::as_tibble() |> select(from, to) |> 
-   atomic_elem() |> all.equal(atomic_elem(select(edges, from, to)))) stop("Mismatch") # Check
+if(net |> activate("nodes") |> tidygraph::as_tibble() |> 
+   st_distance(nodes, by_element = TRUE) |> range() |> 
+   diff() |> unclass() |> is_greater_than(0)) stop("Mismatch") # Check
 
 distances <- st_network_cost(net, weights = "distance") # distance in m
 n_links <- igraph::distances(net)
@@ -69,7 +70,6 @@ add_links$nre_per_link <- sapply(seq_row(add_links), function(i) {
   ind = ckmatch(nodes_coord, mctl(st_coordinates(st_geometry(net_extd, "nodes"))))
   mean(sp_distances / distances_extd[ind, ind], na.rm = TRUE)
 })
-
 # Percent increase
 add_links$nre_gain_perc <- (unattrib(add_links$nre_per_link / nre) - 1) * 100
 descr(add_links$nre_gain_perc)
@@ -328,7 +328,7 @@ sum(edges$cost_km * edges$distance / 1000) / 1e9
 sum(add_links$distance / 1000) / 1e3
 sum(add_links$cost_km * add_links$distance / 1000) / 1e9
 
-edges_real$cost_km = edges$cost_km
+edges_real$cost_km <- edges$cost_km
 
 # Plots
 # <Figure A12: LHS>
@@ -451,9 +451,15 @@ dev.off()
 
 # Computing Times 
 if(!net |> activate("edges") |> tidygraph::as_tibble() |> select(from, to) |> 
-   atomic_elem() |> all.equal(atomic_elem(select(edges, from, to)))) stop("Mismatch") # Check
+   atomic_elem() |> all_obj_equal(atomic_elem(select(edges, from, to)))) {
+  warning("Mismatch") # Check
+  edg_ind <- ckmatch(select(stplanr::line2df(edges), -L1), 
+                     select(stplanr::line2df(net |> activate("edges") |> tidygraph::as_tibble()), -L1), 
+                     overid = 2)
+  if(max(seqid(edg_ind)) != 1) stop("Mismatch")
+}
 
-times <- st_network_cost(net, weights = edges$duration)
+times <- st_network_cost(net, weights = "duration")
 edges %<>% mutate(speed_kmh_imp = iif(speed_kmh < 100, 100, speed_kmh),
                   duration_imp = duration * speed_kmh / speed_kmh_imp)
 descr(edges, cols = .c(duration, duration_imp))
@@ -501,9 +507,9 @@ tm_basemap("CartoDB.Positron", zoom = 5) +
   tm_layout(frame = FALSE)
 dev.off()
 
-# Considering the addition of proposed links under 90km/h or 65km/h assumption
+# Considering the addition of proposed links under 100km/h or 65km/h assumption
 settfm(add_links, 
-       duration_100kmh = distance / kmh_to_mmin(90), 
+       duration_100kmh = distance / kmh_to_mmin(100), 
        duration_65kmh = distance / kmh_to_mmin(65))
 
 # Temporary networks as needed
@@ -715,18 +721,18 @@ descr(all_cb_ratios)
 
 # <Figure 32: First 3 Plots>
 pdf("figures/PE/trans_ECA_network_MA_gain_all_100kmh_pusd_inferno.pdf", width = 10, height = 4.2)
-  tm_basemap("CartoDB.Positron", zoom = 5) +
-      tm_shape(all_cb_ratios) + 
-      tm_lines(col = "MA_gain_pusd", 
-               col.scale = tm_scale_intervals(values = "-inferno", breaks = c(0, 0.1, 0.2, 0.5, 1, 2, 5, Inf)/5),
-               col.legend = tm_legend(expression(Delta~"MA/USD"),
-                                      position = c("left", "top"), frame = FALSE, 
-                                      text.size = 1, title.size = 1.2, margins = c(0, -0.5, 0, 0),
-                                      title.padding = c(0, 0, -0.5, 0), 
-                                      item.space = 0, item.height = 1.5, item.width = 0.5), lwd = 2) + 
-      tm_shape(subset(nodes, population > 0)) + tm_dots(size = 0.1) +
-      tm_shape(subset(nodes, population <= 0)) + tm_dots(size = 0.1, fill = "grey70") +
-      tm_layout(frame = FALSE)
+tm_basemap("CartoDB.Positron", zoom = 5) +
+  tm_shape(all_cb_ratios) + 
+  tm_lines(col = "MA_gain_pusd", 
+           col.scale = tm_scale_intervals(values = "-inferno", breaks = c(0, 0.1, 0.2, 0.5, 1, 2, 5, Inf)/5),
+           col.legend = tm_legend(expression(Delta~"MA/USD"),
+                                  position = c("left", "top"), frame = FALSE, 
+                                  text.size = 1, title.size = 1.2, margins = c(0, -0.5, 0, 0),
+                                  title.padding = c(0, 0, -0.5, 0), 
+                                  item.space = 0, item.height = 1.5, item.width = 0.5), lwd = 2) + 
+  tm_shape(subset(nodes, population > 0)) + tm_dots(size = 0.1) +
+  tm_shape(subset(nodes, population <= 0)) + tm_dots(size = 0.1, fill = "grey70") +
+  tm_layout(frame = FALSE)
 dev.off()
 
 
@@ -804,19 +810,19 @@ for (i in c(0.1, 0.25, 0.5)) {
 list(nodes = nodes,
      edges = edges, 
      add_links = add_links) |>
-  qsave("results/transport_network/PE/PE_results_MA_100kmh.qs")
+  qsave("results/transport_network/PE/PE_results.qs")
 
 nodes |> transform(set_names(mctl(st_coordinates(geometry)), c("lon", "lat"))) |> 
-  atomic_elem() |> qDT() |> fwrite("results/transport_network/PE/PE_results_nodes_MA_100kmh.csv")
-edges |> atomic_elem() |> qDT() |> fwrite("results/transport_network/PE/PE_results_edges_MA_100kmh.csv")
-add_links |> atomic_elem() |> qDT() |> fwrite("results/transport_network/PE/PE_results_add_links_MA_100kmh.csv")
+  atomic_elem() |> qDT() |> fwrite("results/transport_network/PE/PE_results_nodes.csv")
+edges |> atomic_elem() |> qDT() |> fwrite("results/transport_network/PE/PE_results_edges.csv")
+add_links |> atomic_elem() |> qDT() |> fwrite("results/transport_network/PE/PE_results_add_links.csv")
 
 # Also saving Simplified real edges
 edges_real <- qread("data/transport_network/edges_real_simplified.qs")
 all.equal(edges_real$gravity_rd, edges$gravity_rd)
 tfm(edges_real) <- atomic_elem(edges)
 
-edges_real |> qsave("results/transport_network/PE/PE_edges_real_MA_100kmh.qs")
+edges_real |> qsave("results/transport_network/PE/PE_edges_real.qs")
 
 
 #############################################
@@ -838,32 +844,30 @@ graph_nodes <- nodes |> qDT() |>
 
 
 # # Consistency Checks: What to do?
-# identical(graph_orig$from_ctry, graph_nodes$iso3c[graph_orig$from])
-# identical(graph_orig$to_ctry, graph_nodes$iso3c[graph_orig$to])
-# identical(graph_add$from_ctry, graph_nodes$iso3c[graph_add$from])
-# identical(graph_add$to_ctry, graph_nodes$iso3c[graph_add$to])
+identical(graph_orig$from_ctry, graph_nodes$iso3c[graph_orig$from])
+identical(graph_orig$to_ctry, graph_nodes$iso3c[graph_orig$to])
+identical(graph_add$from_ctry, graph_nodes$iso3c[graph_add$from])
+identical(graph_add$to_ctry, graph_nodes$iso3c[graph_add$to])
 
 # Saving
 for (name in .c(graph_orig, graph_add, graph_nodes)) {
-  sprintf("data/transport_network/%s_MA_100kmh.csv", name) |> 
+  sprintf("data/transport_network/%s.csv", name) |> 
     fwrite(x = get(name))
 }
 
 
-
-# STILL NEED TO DO THIS!!
-# TODO: Also Adding the information to the RData file
+# Also Adding the information to the RData file
 load("data/transport_network/trans_ECA_network.RData")
 
 # Load previous saved graphs
 graphs <- sapply(.c(graph_orig, graph_add, graph_nodes), function(name)
-  sprintf("data/transport_network/%s_MA_100kmh.csv", name) |> fread())
+  sprintf("data/transport_network/%s.csv", name) |> fread())
 graphs$graph_orig$add <- FALSE
 graphs$graph_add$add <- TRUE
 
 # Joining
-nodes %<>% transform(qDF(round(st_coordinates(.), 4))) %>% 
-  join(tfm(graphs$graph_nodes, X = round(lon, 4), Y = round(lat, 4)), 
+nodes %<>% transform(qDF(round(st_coordinates(.), 3))) %>% 
+  join(tfm(graphs$graph_nodes, X = round(lon, 3), Y = round(lat, 3)), 
        on = c("X", "Y", "population", "key_city"), drop = "x", overid = 0, how = "inner") %>% select(-X, -Y)
 edges %<>% join(graphs$graph_orig, on = c("from", "to"), drop = "x", overid = 2)
 add_links %<>% join(graphs$graph_add, on = c("from", "to"), drop = "x", overid = 2)
@@ -883,7 +887,7 @@ TAN_env$nodes_param <- nodes
 TAN_env$edges_param <- edges
 TAN_env$add_links_param <- add_links
 TAN_env$net_param <- net
-save(list = ls(TAN_env), file = "data/transport_network/trans_ECA_network_param_MA_100kmh.RData", envir = TAN_env)
+save(list = ls(TAN_env), file = "data/transport_network/trans_ECA_network_param.RData", envir = TAN_env)
 
 
 
