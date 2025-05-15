@@ -6,8 +6,9 @@ library(fastverse)
 set_collapse(mask = c("manip", "helper", "special"), nthreads = 4)
 fastverse_extend(qs, sf, units, sfnetworks, tmap, install = TRUE)
 source("code/fs_build/helpers.R")
-fastverses()
+fastverse_conflicts()
 
+load("data/transport_network/trans_ECA_network.RData")
 
 # All essential objects from previous sections
 edges_real <- qread("data/transport_network/edges_real_simplified.qs") # |> 
