@@ -488,7 +488,8 @@ nodes$iso3c[whichNA(ind)] <- "TUR"
 all(line2df(edges) %>% select(fx, fy) %in% mctl(st_coordinates(nodes)))
 all(line2df(edges) %>% select(tx, ty) %in% mctl(st_coordinates(nodes)))
 edges$from <- fmatch(line2df(edges) %>% select(fx, fy), mctl(st_coordinates(nodes)))
-edges$to <- fmatch(line2df(edges) %>% select(fx, fy), mctl(st_coordinates(nodes)))
+edges$to <- fmatch(line2df(edges) %>% select(tx, ty), mctl(st_coordinates(nodes)))
+setdiff(seq_row(nodes), c(edges$from, edges$to))
 edges$from_ctry <- nodes$iso3c[edges$from]
 edges$to_ctry <- nodes$iso3c[edges$to]
 setcolorder(edges, .c(from, from_ctry, to, to_ctry))
@@ -498,6 +499,7 @@ all(line2df(add_links) %>% select(fx, fy) %in% mctl(st_coordinates(nodes)))
 all(line2df(add_links) %>% select(tx, ty) %in% mctl(st_coordinates(nodes)))
 add_links$from <- fmatch(line2df(add_links) %>% select(fx, fy), mctl(st_coordinates(nodes)))
 add_links$to <- fmatch(line2df(add_links) %>% select(tx, ty), mctl(st_coordinates(nodes)))
+setdiff(seq_row(add_links), c(add_links$from, add_links$to))
 add_links$from_ctry <- nodes$iso3c[add_links$from]
 add_links$to_ctry <- nodes$iso3c[add_links$to]
 setcolorder(add_links, .c(id, from, from_ctry, to, to_ctry))
@@ -505,7 +507,10 @@ setcolorder(add_links, .c(id, from, from_ctry, to, to_ctry))
 descr(diag(st_distance(nodes, st_as_sf(dist_ttime_mats$sources, coords = c("lon", "lat"), crs = 4326))))
 descr(diag(st_distance(nodes, st_as_sf(dist_ttime_mats$destinations, coords = c("lon", "lat"), crs = 4326))))
 
-net <- sfnetwork(nodes, edges, directed = FALSE)
+net <- sfnetwork(nodes, edges, directed = FALSE, 
+                 edges_as_lines = TRUE, length_as_weight = TRUE)
+
+descr(vec(st_network_cost(net)))
 
 save(nodes, edges, edges_ind, nodes_coord, net, add_links,  
      cities, cities_rsp_sf, 
