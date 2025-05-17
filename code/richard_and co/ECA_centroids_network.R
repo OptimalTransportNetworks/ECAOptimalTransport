@@ -333,4 +333,34 @@ dev.off()
 
 
 
+##########################################################
+# Matching Nodes to Nearest City (within 30km)
+##########################################################
 
+countries <- wbstats::wb_cachelist$countries %$% iso3c[region_iso3c == "ECS" | iso3c %in% c("IRQ", "IRN", "SYR")] %>% 
+  c("XKO") %>% setdiff(c("GRL", "ISL", "GBR", "IRL", "NOR", "SWE", "FIN", "FRO", "IMN", "CYP"))
+
+cities <- fread("/Users/sebastiankrantz/Documents/Data/cities/simplemaps_worldcities_basicv1.77/worldcities.csv") |>
+  subset(iso3 %in% countries & is.finite(population)) |> rename(lng = lon) |> 
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)
+setdiff(countries, cities$iso3)
+setdiff(cities$iso3, countries)
+
+load("data/ECA_centroids_network/ECA_centroids_network.RData")
+
+# mapview(cities) + mapview(nodes)
+dmat <- st_distance(cities, nodes)
+dmat[dmat != fmin(t(dmat))] <- Inf # Only closest 
+nearest <- dapply(dmat, function(x) if(!allv(x, Inf)) which.min(x) else NA)
+tmp <- st_distance(nodes)
+diag(tmp) <- NA
+descr(fmin(tmp))
+descr(replace_inf(fmin(dmat)))
+nearest[unclass(fmin(dmat)) > 30e3] <- NA
+# mapview(nodes[!is.na(nearest), ]) + mapview(cities[na_rm(nearest), ])
+tfm(nodes) <- atomic_elem(cities) |> ss(nearest) |> add_vars(distance = fmin(dmat))
+rm(dmat, nearest, tmp); gc()
+
+save(nodes, edges, edges_ind, nodes_coord, net, add_links,  
+     ECA_centroids, dist_ttime_mats, sym_dist_mat, sym_time_mat, 
+     file = "data/ECA_centroids_network/ECA_centroids_network.RData")
