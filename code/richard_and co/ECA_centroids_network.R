@@ -350,16 +350,20 @@ load("data/ECA_centroids_network/ECA_centroids_network.RData")
 
 # mapview(cities) + mapview(nodes)
 dmat <- st_distance(cities, nodes)
+pop <- cities$population + 1
 dmat[dmat != fmin(t(dmat))] <- Inf # Only closest 
-nearest <- dapply(dmat, function(x) if(!allv(x, Inf)) which.min(x) else NA)
+nearest <- dapply(dmat, function(x) if(!allv(x, Inf)) {
+  x[x > 30e3] <- Inf
+  if(allv(x, Inf)) return(NA)
+  which.min(x / pop) 
+} else NA)
 tmp <- st_distance(nodes)
 diag(tmp) <- NA
 descr(fmin(tmp))
 descr(replace_inf(fmin(dmat)))
-nearest[unclass(fmin(dmat)) > 30e3] <- NA
 # mapview(nodes[!is.na(nearest), ]) + mapview(cities[na_rm(nearest), ])
 tfm(nodes) <- atomic_elem(cities) |> ss(nearest) |> add_vars(distance = fmin(dmat))
-rm(dmat, nearest, tmp); gc()
+rm(dmat, nearest, pop, tmp); gc()
 
 save(nodes, edges, edges_ind, nodes_coord, net, add_links,  
      ECA_centroids, dist_ttime_mats, sym_dist_mat, sym_time_mat, 
