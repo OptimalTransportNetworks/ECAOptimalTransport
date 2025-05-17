@@ -347,6 +347,7 @@ setdiff(countries, cities$iso3)
 setdiff(cities$iso3, countries)
 
 load("data/ECA_centroids_network/ECA_centroids_network.RData")
+nodes <- nodes[, 1:2]
 
 # mapview(cities) + mapview(nodes)
 dmat <- st_distance(cities, nodes)
@@ -360,9 +361,10 @@ nearest <- dapply(dmat, function(x) if(!allv(x, Inf)) {
 tmp <- st_distance(nodes)
 diag(tmp) <- NA
 descr(fmin(tmp))
-descr(replace_inf(fmin(dmat)))
+descr(mapply(`[`, mctl(dmat), nearest))
 # mapview(nodes[!is.na(nearest), ]) + mapview(cities[na_rm(nearest), ])
-tfm(nodes) <- atomic_elem(cities) |> ss(nearest) |> add_vars(distance = fmin(dmat))
+tfm(nodes) <- atomic_elem(cities) |> ss(nearest) |> 
+  add_vars(distance = mapply(`[`, mctl(dmat), nearest))
 rm(dmat, nearest, pop, tmp); gc()
 
 save(nodes, edges, edges_ind, nodes_coord, net, add_links,  
