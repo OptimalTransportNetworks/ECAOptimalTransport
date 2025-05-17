@@ -73,11 +73,11 @@ table(nodes$product, na.exclude = FALSE)
 setv(nodes$product, whichNA(nodes$product), seq_along(largest) + 4L)
 
 # Need to write this to ensure product classification is available for GE simulation !!!!
-nodes_param <- fread("data/transport_network/graph_nodes_MA_100kmh.csv")
+nodes_param <- fread("data/transport_network/graph_nodes.csv")
 nodes_param |> select(lon, lat) |> qM() |> subtract(st_coordinates(nodes)) |> descr() |> print(digits = 7)
 nodes_param$product <- nodes$product
 nodes_param$iso3c <- nodes$iso3c
-# nodes_param |> atomic_elem() |> qDT() |> fwrite("data/transport_network/graph_nodes_MA_100kmh.csv")
+# nodes_param |> atomic_elem() |> qDT() |> fwrite("data/transport_network/graph_nodes.csv")
 rm(nodes_param)
 attr(nodes$product, "levels") <- c("Small Town", "City > 100K", "City > 250K", "City > 1M", paste("Major City", seq_along(largest)))
 class(nodes$product) <- "factor"
@@ -104,8 +104,8 @@ dev.off()
 
 # # Plot population and productivity (for GE Calibration) ------------------------------------------------------
 # 
-# graph_nodes <- fread("data/transport_network/csv/graph_nodes_MA_100kmh.csv") 
-# graph_edges <- fread("data/transport_network/csv/graph_orig_MA_100kmh.csv") 
+# graph_nodes <- fread("data/transport_network/csv/graph_nodes.csv") 
+# graph_edges <- fread("data/transport_network/csv/graph_orig.csv") 
 # 
 # # Now: Plotting Productivity
 # graph_nodes %<>%
