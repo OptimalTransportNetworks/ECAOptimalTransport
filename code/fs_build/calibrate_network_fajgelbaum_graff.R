@@ -159,3 +159,25 @@ select(qDT(routes), from:to_lat, fx:ty,  duration, distance, sp_distance:cost) |
   fwrite("data/grid_network/ECA_edges.csv")
 
 
+# Plot
+library(tmap)
+edges <- fread("data/grid_network/ECA_edges.csv")
+segments <- lapply(seq_row(edges), function(i) {
+  st_linestring(matrix(c(edges$from_lon[i], edges$to_lon[i], 
+                         edges$from_lat[i], edges$to_lat[i]), 2))
+}) |> st_as_sfc(crs = 4326)
+
+edges %<>% mutate(geometry = segments) %>% st_as_sf()
+
+pdf("figures/ECA_grid_network_time_efficiency.pdf", width = 8.7, height = 4.2)
+tm_basemap("CartoDB.Positron", zoom = 5) +
+  tm_shape(edges) +
+  tm_lines(col = "time_efficiency", 
+           col.scale = tm_scale_continuous(values = "inferno"),
+           col.legend = tm_legend("Time Efficiency (km/h)", position = c("left", "top"), frame = FALSE, 
+                                  text.size = 1, title.size = 1.2, margins = c(0, -0.5, 0, 0),
+                                  title.padding = c(0, 0, -0.5, 0), 
+                                  item.space = 0, item.height = 2.5, item.width = 0.5)) +
+  tm_layout(frame = FALSE) 
+dev.off()
+
