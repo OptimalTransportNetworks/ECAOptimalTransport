@@ -1,0 +1,196 @@
+\documentclass[a4paper]{article}
+
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+% \usepackage[T1]{fontenc}
+
+%% Sets page size and margins
+\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+%% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{apacite} % APA style citations
+\AtBeginDocument{\urlstyle{APACsame}}  % Links in APA citytions same formatting
+\usepackage{tabulary}
+\usepackage{natbib} % natbib citations: \citep{} and \citet{} for in-text
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{adjustbox}
+\usepackage[skip=0.5ex]{subcaption}
+% If you use \tableofcontents, this adjusts the name
+%\addto\captionsenglish{\renewcommand*\contentsname{Table of Contents}}
+\newcommand{\ubar}[1]{\text{\b{$#1$}}}
+
+
+\title{\textbf{Spatial Road Network Misallocation and Optimal Expansion in Europe and Central Asia}}
+\author{Sebastian Krantz}
+
+\begin{document}
+\maketitle
+
+This brief examines whether road infrastructure was allocated efficiently across European and Central-Asian (ECA) countries, using a quantitative spatial general equilibrium model developed by \citet{fajgelbaum2020optimal} and taking inspiration from \citet{graff2024spatial} for its calibration with the Open Street Map (OSM) routing engine (OSRM) \citep{luxen-vetter-2011}. As in \citet{fajgelbaum2020optimal}, I consider a 0.5$^\circ$ grid of estimates with GDP per capita and population as a starting point for constructing national network representations---using recent global estimates by \citet{LGEAW}. I then determine the population centroid of each cell using 1$km^2$ estimates for the year 2020 from WorldPop \citep{tatem2017worldpop}. I retain all cells covering the continental ECA region, excluding island states like the UK, the nordic peninsula (Norway, Sweden, Finland), and limiting Russia to the north by St. Petersburg and to the east by Novosibirsk. Thus, I obtain a grid of 7694 connected 0.5$^\circ$ cells covering 43 ECA countries. \newline 
+
+Each cell touches up to 8 neighbouring cells. I then retrieve fastest car routes between the population centroids of all neighbouring cells using OSRM. The median route has a length of 93km and spans a geodesic distance of 58.2$km$. Since OSRM 'snaps' the centroids to the nearest road, I follow \citet{graff2024spatial} and add the geodesic distance from the centroids to the route starting/end points to the route length, assuming a travel speed of 10$km/h$ to not inflate travel times too much. The median travel speed on the routes themselves is 47.6$km/h$, and adding the start/end segments at 10$km/h$ reduces the median speed to 42.2$km/h$. \newline 
+
+ Overall infrastructure efficiency/quality is thus a function of two factors: (1) route efficiency (RE), which is the geodesic distance divided by the total length of the route from centroid to centroid; and (2) travel speed along the total route. I combine these two factors by calculating time efficiency (TE) as the geodesic centroids distance divided by the total travel time. It effectively measures the travel speed in the direction of the destination, accounting for both infrastructure 
+ 
+ \begin{figure}[H] % \vspace{-3mm}
+ \centering
+ \caption{\label{fig:ECAgnet} Time Efficiency in 0.5$^\circ$ Grid Network Spanning Continental ECA}
+ \includegraphics[width=\textwidth, trim= {5mm 0 5mm 0}, clip]{"../figures/ECA_grid_network_time_efficiency.pdf"} %trim={<left> <lower> <right> <upper>}
+ \vspace{-5mm}
+ \end{figure}
+ 
+\noindent quality and quantity connecting two cells. The median TE estimate is 23.6$km/h$. Figure \ref{fig:ECAgnet} shows the result. As expected, infrastructure is much more efficient in Western Europe where some segments have TE of up to 82$km/h$. It is also notable that TE along the Russion border are near zero---due to the Ukraine war and other geopolitical tensions (e.g. with Poland) resulting in border restrictions taken into account in OSM. This will be less of a practical issue as in the following I will only assess national infrastructure optimality using the model of \citet{fajgelbaum2020optimal}. \newline 
+ 
+Concretely, for each country, I retain all national centroids and centroids within 100$km$ geodesic distance from national centroids, alongside all connecting segments. I then let the 15 largest cells with a population above 200,000 produce different products which are traded across the network. Other cells are divided into 5 quantiles according to population, where each quantile produces its own product. Thus, in total 20 products are traded and each cell only produces one of them. This amounts to an \citet{armington1969theory} model of products differentiated by origin, and a recent meta-study by \citet{BAJZIK2020103383} finds a median Armington Elasticity (of substitution) of $\sigma = 3.8$, which I accordingly set in \citet{fajgelbaum2020optimal}'s model. The goods are produced using a linear technology $Y_i = Z_i L_i$, where $L_i$ is cell $i$'s population and $Z_i$ cell GDP per Capita in 2017 PPP terms---both obtained from  \citet{LGEAW}. Moreover, individual utility over traded and non-traded goods (housing) is a Cobb-Douglas function $U = c^\alpha h^{1-\alpha}$, where following \citet{fajgelbaum2020optimal} I set $\alpha = 0.4$, and following \citet{graff2024spatial} I set $h = 1$, i.e., housing is proportional to population and each person is given one unit of housing. I also follow \citet{fajgelbaum2020optimal} by setting the congestion parameter $\beta = 0.13$, and the returns to infrastructure $\gamma = 0.1$ in the baseline (decreasing returns to infrastructure) case, and I set iceberg trade costs to $\delta^\tau_{ij} = 0.116 \times \log(\text{geodesic distance in km})$ roughly following \citet{graff2024spatial}. These parameters enter an iceberg trade costs equation of the form $1+\tau^n_{ij}$ capturing the cost of trading good $n$ between cells $i$ and $j$, with $\tau^n_{ij} = \delta^\tau_{ij} (Q^n_{ij})^\beta / I_{ij}^\gamma.$ I also consider the increasing returns to infrastructure case by inverting the ratio of $\beta$ and $\gamma$ following \citet{fajgelbaum2020optimal} to obtain $\gamma' = \beta^2/\gamma = 0.169$. \newline 
+
+The latter may be more realistic since \citet{shepherd2007trade}, studying trade and road infrastructure in ECA, find that a 1\% improvement in average road quality is associated with a 0.2\% to 0.6\% increase in trade, and \citet{cocsar2016domestic}, studying large-scale public investment in roads undertaken in Turkey during the 2000s, find that the distance elasticity of trade improved by 0.10–0.27 when roads were upgraded. Both studies thus suggest a value of $\gamma$ well above 0.1. \newline 
+
+Finally, following \citet{fajgelbaum2020optimal}, and \citet{collier2016cost}, and \citet{krantz2024optimal}, I estimate the cost of building infrastructure on a link as 
+\begin{equation}
+\delta^I_{ij} = \delta^I_0 + 0.12 \times \log(\text{Ruggedness}_{ij}) + 0.085 \times \log(\text{Population per $km^2$}_{ij}),
+\end{equation}
+where terrain Ruggedness is taken from \citet{nunn2012ruggedness} and averaged in each cell, and population density is computed using WorldPop 2020 estimates \citep{tatem2017worldpop}. To obtain bilateral measures, I average the estimates of the respective cells $i$ and $j$. The network building constraint is then $K = \sum_i \sum_j \delta^I_{ij} I_{ij}$, and, following \citet{fajgelbaum2020optimal}, I determine $\delta^I_0$ such that the budget $K = $1,000,000. In the following I then run two simulations for each country following \citet{graff2024spatial}: (1) an optimal 10\% expansion of the existing infrastructure stock ($I_{ij} = $ time efficiency) where $K = $1,100,000 and $\ubar{I}_{ij} = I_{ij}$ (existing infrastructure is fixed) and $\bar{I}_{ij} = 70km/h$, which is in the 99.9th percentile; and (2) an optimal reallocation exercise where $K = $1,000,000 and $\ubar{I}_{ij} = \min(I_{ij}, 10km/h)$, i.e., the welfare maximizing social planner can reallocate infrastructure. \newline 
+
+In optimizing infrastructure, the planner only maximizes total national welfare, and can also only spend/reallocate infrastructure on national links. The 100$km$ buffer zone takes surrounding cells into account as trading partners. Infrastructure may thus be built to foster international trade, but only within national boundaries, and only if it maximizes welfare for domestic consumers. \newline 
+ 
+Figure \ref{fig:Realloc} shows the welfare gains from the optimal reallocation of national networks of 39 ECA countries, excluding Russia and Kazakhstan where no solution could be obtained due to the large network sizes. Under increasing returns ($\gamma = 0.169 > \beta$), the gains are higher due to overall lower trade costs $\tau_{ij}$ resulting in larger volumes of trade in this case. But the gains under DR ($\gamma = 0.1 < \beta$) are very similar between the different countries. In both cases, there are four countries: Bulgaria, Tajikistan, Kyrgyzstan, and Estonia, with the highest welfare gains. 
+
+ \begin{figure}[H] \vspace{-10mm}
+ \centering
+ \caption{\label{fig:Realloc} Welfare Gains from Optimal Reallocation of National Road Networks}
+ \vspace{-3mm}
+ \includegraphics[width=\textwidth]{"../figures/ECA_grid_network_realloc_barchart_both.pdf"} %trim={<left> <lower> <right> <upper>}
+ \\ \vspace{3mm}
+ \begin{adjustbox}{center}
+ \begin{tabular}{cc}
+ Estonia (0.68\%) & Kyrgyztan (0.64\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 5cm}, clip]{"../figures/grid_network/realloc_fixed_irs/EST_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 5cm}, clip]{"../figures/grid_network/realloc_fixed_irs/KGZ_opt_realloc_irs.pdf"} \\ 
+ Tajikistan (0.55\%) & Bulgaria (0.53\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 4cm}, clip]{"../figures/grid_network/realloc_fixed_irs/TJK_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 5cm}, clip]{"../figures/grid_network/realloc_fixed_irs/BGR_opt_realloc_irs.pdf"} \\ 
+ \end{tabular}
+ \end{adjustbox}
+ \end{figure}
+
+The bottom half of Figure \ref{fig:Realloc} therefore shows the graphical results for these countries. The thickness of links amounts to the final reallocation, whereas their colour indicates whether infrastruc-ture was added (red) or removed (blue) during the reallocation process. The size of nodes corresponds to their population, and their colour indicates welfare gains from reallocation, with red or orange nodes experiencing gains, green nodes maintaining their welfare level, and blue nodes loosing out on welfare. National nodes surrounded by a white circle or buffer nodes surrounded by a black circle produce their own unique product and are thus particularly important trading partners. \newline 
+
+The overall reallocation pattern exhibited by these four countries, as well as most other countries, is that infrastructure is taken out of peripheral and sparsely populated regions to better connect urban centers. The results thus lend support to the hypothesis that, at least in terms of road connectivity, too much infrastructure spending targeted unimportant roads, whereas larger welfare gains could have been achieved from improving inter-city connectivity. Yet, in all cases, the welfare gains are below 1\%, indicating that road networks in ECA are generally more efficient than, e.g., in Africa, where some countries like Somalia can reap gains of $\geq$6\% from reallocation \citep{graff2024spatial}. \newline 
+
+Appendix Figure \ref{fig:ReallocExtra} shows the reallocation graphs for further countries under increasing returns ($\gamma > \beta$) in order of their welfare gains. As indicated, the general pattern is that infrastructure is reallocated from the periphery to segments connecting urban centers, as this is where most people live and thus where most welfare gains can be reaped. A concave individual utility function alone is thus not sufficient to incentivize a welfare maximizing social planner to spend significantly on infrastructure in scarcely populated rural regions. Other planning objectives may correct for this. \newline 
+
+Analogous, Figure \ref{fig:10pExp} visualizes the welfare gains from an optimal 10\% network expansion. The gains are lower than from reallocation, indicating that even an optimal a 10\% investment is not able to equal the benefits from a more optimal past resource allocation. Again, Estonia would reap the largest gains of around 0.35\%, and the ranking of countries is overall similar to the reallocation case. It is more notably, however, that some western European countries such as Greece and Denmark could also reap large gains from a 10\% optimal network expansion. This may be correlated with their their more fragmented geographies and the resulting difficulties of building efficient integrated road networks on them. Similar to the reallocation case, optimal expansions typically target major links connecting urban centers, but also extend investments a bit into the periphery. \newline 
+
+Appendix Figure \ref{fig:10PExpExtra} again shows the optimal expansions for further countries in order of their welfare gains. In most countries, the investments are also allocated along central links, with some supporting investments to 'feeder lines'. \newline
+
+The analysis overall thus suggests that European and particularly Central Asian countries could reap moderate welfare gains from an optimal expansion of their road networks targeting mainly central links connecting major urban centers. This is not a consequence of the IR ($\gamma > \beta$) assumption leading to more tree-like networks as described by \citet{fajgelbaum2020optimal}; the results under DR ($\gamma < \beta$) are very similar and thus not shown. 
+
+
+ \begin{figure}[H] \vspace{-10mm}
+ \centering
+ \caption{\label{fig:10pExp} Welfare Gains from Optimal 10\% Expansion of National Road Networks}
+  \vspace{-3mm}
+ \includegraphics[width=\textwidth]{"../figures/ECA_grid_network_10perc_barchart_both.pdf"} %trim={<left> <lower> <right> <upper>}
+ \\ \vspace{3mm}
+ \begin{adjustbox}{center}
+ \begin{tabular}{cc}
+ Estonia (0.35\%) & Greece (0.25\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 7cm}, clip]{"../figures/grid_network/10perc_fixed_irs/EST_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 4cm}, clip]{"../figures/grid_network/10perc_fixed_irs/GRC_opt_10perc_irs.pdf"}  \\ 
+ Tajikistan (0.21\%) & Kyrgyztan (0.19\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 4cm}, clip]{"../figures/grid_network/10perc_fixed_irs/TJK_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 5cm}, clip]{"../figures/grid_network/10perc_fixed_irs/KGZ_opt_10perc_irs.pdf"}  \\ 
+ \end{tabular}
+ \end{adjustbox}
+ \end{figure}
+
+
+\newpage
+
+\bibliographystyle{apacite}
+\bibliography{bibliography} % This links to a file bibliography.bib with the citations
+
+\appendix
+
+\setcounter{figure}{0}
+\renewcommand{\thefigure}{A\arabic{figure}}
+
+% \section*{Appendix}
+
+ \begin{figure}[H] % \vspace{-12mm}
+ \centering
+ \caption{\label{fig:ReallocExtra} Welfare Gains from Optimal Reallocation: Further Countries}
+ \vspace{3mm}
+ \begin{adjustbox}{center}
+ \begin{tabular}{cc}
+ Ukraine (0.46\%) & Denmark (0.46\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 5cm}, clip]{"../figures/grid_network/realloc_fixed_irs/UKR_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 5cm}, clip]{"../figures/grid_network/realloc_fixed_irs/DNK_opt_realloc_irs.pdf"} \\ 
+ Turkmenistan (0.44\%) & Poland (0.43\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 5cm}, clip]{"../figures/grid_network/realloc_fixed_irs/TKM_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 5cm}, clip]{"../figures/grid_network/realloc_fixed_irs/POL_opt_realloc_irs.pdf"} \\ 
+  Greece (0.4\%) & Belarus (0.39\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 4cm}, clip]{"../figures/grid_network/realloc_fixed_irs/GRC_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 4cm}, clip]{"../figures/grid_network/realloc_fixed_irs/BEL_opt_realloc_irs.pdf"} \\ 
+ Italy (0.38\%) & Serbia (0.38\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 5cm 1cm 4cm}, clip]{"../figures/grid_network/realloc_fixed_irs/ITA_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 2cm}, clip]{"../figures/grid_network/realloc_fixed_irs/SRB_opt_realloc_irs.pdf"} 
+  \end{tabular}
+ \end{adjustbox}
+ \end{figure}
+ 
+ 
+  \begin{figure}[H] \ContinuedFloat \vspace{-5mm}
+ \centering
+ \caption{\label{fig:ReallocExtra} Welfare Gains from Optimal Reallocation: Further Countries (\emph{Continued})}
+ \vspace{3mm}
+ \begin{adjustbox}{center}
+ \begin{tabular}{cc}
+    Turkey (0.38\%) & Azerbaijan (0.38\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {3cm 3cm 3cm 7cm}, clip]{"../figures/grid_network/realloc_fixed_irs/TUR_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 2cm}, clip]{"../figures/grid_network/realloc_fixed_irs/AZE_opt_realloc_irs.pdf"} \\
+ France (0.37\%) & Spain (0.36\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 2cm}, clip]{"../figures/grid_network/realloc_fixed_irs/FRA_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/realloc_fixed_irs/ESP_opt_realloc_irs.pdf"} \\ 
+   Uzbekistan (0.34\%) & Romania (0.33\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/realloc_fixed_irs/UZB_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/realloc_fixed_irs/ROU_opt_realloc_irs.pdf"} \\ 
+ Germany (0.31\%) & Portugal (0.31\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 2cm}, clip]{"../figures/grid_network/realloc_fixed_irs/DEU_opt_realloc_irs.pdf"} &  \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/realloc_fixed_irs/PRT_opt_realloc_irs.pdf"} \\ 
+ \end{tabular}
+ \end{adjustbox}
+ \end{figure}
+
+ \begin{figure}[H] \vspace{-3mm}
+ \centering
+ \caption{\label{fig:10PExpExtra} Welfare Gains from Optimal 10\% Expansion: Further Countries}
+ \vspace{3mm}
+ \begin{adjustbox}{center}
+ \begin{tabular}{cc}
+ Denmark (0.19\%) & Bulgaria (0.18\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/DNK_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/BGR_opt_10perc_irs.pdf"}  \\ 
+ Turkmenistan (0.17\%) & Ukraine (0.17\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/TKM_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/UKR_opt_10perc_irs.pdf"}  \\ 
+  Serbia (0.16\%) & Italy (0.16\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 2cm}, clip]{"../figures/grid_network/10perc_fixed_irs/SRB_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 2cm}, clip]{"../figures/grid_network/10perc_fixed_irs/ITA_opt_10perc_irs.pdf"}  \\ 
+ Spain (0.15\%) & Turkey (0.14\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/ESP_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {3cm 3cm 3cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/TUR_opt_10perc_irs.pdf"}  
+ \end{tabular}
+ \end{adjustbox}
+ \end{figure}
+ 
+ 
+  \begin{figure}[H]  \ContinuedFloat \vspace{-5mm}
+ \centering
+ \caption{\label{fig:10PExpExtra} Welfare Gains from Optimal 10\% Expansion: Further Countries (\emph{Continued})}
+ \vspace{3mm}
+ \begin{adjustbox}{center}
+ \begin{tabular}{cc}
+    France (0.14\%) & Belarus (0.14\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 2cm 1cm 2cm}, clip]{"../figures/grid_network/10perc_fixed_irs/FRA_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/BLR_opt_10perc_irs.pdf"}  \\ 
+ Georgia (0.13\%) & Poland (0.13\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/GEO_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/POL_opt_10perc_irs.pdf"}  \\ 
+  Albania (0.13\%) & Romania (0.12\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/ALB_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/ROU_opt_10perc_irs.pdf"}  \\ 
+ Uzbekistan (0.12\%) & Germany (0.12\%) \\
+ \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 3cm}, clip]{"../figures/grid_network/10perc_fixed_irs/UZB_opt_10perc_irs.pdf"} & \includegraphics[width=0.6\textwidth, trim = {1cm 3cm 1cm 2cm}, clip]{"../figures/grid_network/10perc_fixed_irs/DEU_opt_10perc_irs.pdf"}  
+ \end{tabular}
+ \end{adjustbox}
+ \end{figure}
+ 
+ 
+\end{document}
