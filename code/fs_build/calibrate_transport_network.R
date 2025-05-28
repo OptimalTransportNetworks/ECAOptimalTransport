@@ -102,6 +102,83 @@ tm_basemap("CartoDB.Positron", zoom = 5) +
 dev.off()         
 
 
+# Projects -----------------------------------------------------------------------------------------------------
+
+if(!all.equal(edges$gravity_rd, edges_real$gravity_rd)) stop("Mismatch!")
+tfm(edges_real) <- atomic_elem(edges)
+edges_real$id <- seq_row(edges_real)
+
+mapview(edges_real, map.types = c("Esri.WorldStreetMap", mapviewGetOption("basemaps"))) + 
+  mapview(add_links)
+
+# P099270 CAREC 1B & 6B
+segments1 <- c(1645, 1653, 1665, 1671, 1673, 1674, 1675, # Shymkent -> Khorgos (and beyond)
+              1643, # Shymkent -> Tashkent
+              1633, 1624, 1578, 1564, 1543) # Shymkent -> Aktobe
+
+# P149952	East-West Highway Corridor Improvement (Georgia)
+segments2 <- c(1364, 1337, 1328, 1317, 1309)
+
+# P149955	Road Upgrading and Development Project (North Macedonia)
+segments3 <- c(559, 560) # -> Segments are a bit longer than the actual projects!!
+
+# P159220	Third/Fourth Phase of the Central Asia Regional Links Program (CARs-3) (Kyrgyz Republic)
+#-> Seems not in the graph!!
+segments4 <- c(1642, 1632, 1647)
+
+# P173782	Kakheti Connectivity Improvement Project (Georgia)
+segments5 <- c(1389, 1390, 1391) # 1391 goes outside the country to Baku
+
+# P174379	Regional Connectivity and Development Project (Azerbaijan)
+segments6 <- c(1454) # Way too long: project only goes from Salyan to Balsuvar. Maybe do 30% upgrade.
+
+# P180153	Moldova Rural Connectivity Project (Moldowa)
+segments7 <- c(776, 786, 791) # Not exactly project roads
+
+# P500565	Transport Resilience and Connectivity Enhancement Project (Jezkazgan-Karagandy Section of TCITR (Middle Corridor))
+segments8 <- c(1662) # Too long, only until Jezkazgan
+
+segments <- c(segments1, segments2, segments3, segments4, segments5, segments6, segments7, segments8)
+
+mapview(edges_real[segments, ])
+
+# Saving 
+graph_edges <- fread("data/transport_network/graph_orig.csv")
+if(nrow(graph_edges) != nrow(edges_real)) stop("Mismatch!")
+
+graph_edges$project <- FALSE
+graph_edges$project[segments] <- TRUE
+
+graph_edges |> fwrite("data/transport_network/graph_orig.csv")
+
+# Plotting
+pdf("figures/trans_ECA_network_projects.pdf", width = 10, height = 4.2)
+tm_basemap("CartoDB.Positron", zoom = 5) +
+  tm_shape(ss(edges_real, -segments)) +
+  tm_lines(col = "grey70", lwd = 2) +
+  tm_shape(ss(edges_real, segments)) +
+  tm_lines(col = "orange", lwd = 2) +
+  tm_shape(subset(nodes, !key_city)) + tm_dots(size = 0.1, fill = "grey50") +
+  tm_shape(subset(nodes, key_city)) + tm_dots(size = 0.2) +
+  tm_layout(frame = FALSE) 
+dev.off()
+
+pdf("figures/ECA_centroids_network_actual_discretized_middle_corridor_speed_EWTM.pdf", width = 17, height = 7)
+tm_basemap("Esri.WorldTopoMap", zoom = 6) +
+  tm_shape(edges_real_ext) +
+  tm_lines(col = "speed_kmh",
+           col.scale = tm_scale_continuous(5, values = "turbo"),
+           col.legend = tm_legend("Speed in km/h", position = c("left", "top"), frame = FALSE, 
+                                  text.size = 1, title.size = 1.2, margins = c(0, -0.5, 0, 0),
+                                  title.padding = c(0, 0, -0.5, 0), 
+                                  item.space = 0, item.height = 2, item.width = 0.5)) +
+  tm_shape(subset(nodes, key_city)) + tm_dots(size = 0.2) +
+  tm_shape(subset(nodes, !key_city)) + tm_dots(size = 0.1, fill = "grey70") +
+  tm_layout(frame = FALSE) #, inner.margins = c(0.1, 0.1, 0.1, 0.1))
+dev.off()
+
+
+
 # # Plot population and productivity (for GE Calibration) ------------------------------------------------------
 # 
 # graph_nodes <- fread("data/transport_network/csv/graph_nodes.csv") 
