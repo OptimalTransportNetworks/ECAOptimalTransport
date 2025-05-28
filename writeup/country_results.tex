@@ -56,15 +56,17 @@ Finally, following \citet{fajgelbaum2020optimal}, and \citet{collier2016cost}, a
 \end{equation}
 where terrain Ruggedness is taken from \citet{nunn2012ruggedness} and averaged in each cell, and population density is computed using WorldPop 2020 estimates \citep{tatem2017worldpop}. To obtain bilateral measures, I average the estimates of the respective cells $i$ and $j$. The network building constraint is then $K = \sum_i \sum_j \delta^I_{ij} I_{ij}$, and, following \citet{fajgelbaum2020optimal}, I determine $\delta^I_0$ such that the budget $K = $1,000,000. In the following I then run two simulations for each country following \citet{graff2024spatial}: (1) an optimal 10\% expansion of the existing infrastructure stock ($I_{ij} = $ time efficiency) where $K = $1,100,000 and $\ubar{I}_{ij} = I_{ij}$ (existing infrastructure is fixed) and $\bar{I}_{ij} = 70km/h$, which is in the 99.9th percentile; and (2) an optimal reallocation exercise where $K = $1,000,000 and $\ubar{I}_{ij} = \min(I_{ij}, 10km/h)$, i.e., the welfare maximizing social planner can reallocate infrastructure. \newline 
 
-In optimizing infrastructure, the planner only maximizes total national welfare, and can also only spend/reallocate infrastructure on national links. The 100$km$ buffer zone takes surrounding cells into account as trading partners. Infrastructure may thus be built to foster international trade, but only within national boundaries, and only if it maximizes welfare for domestic consumers. \newline 
+In optimizing infrastructure, the planner only maximizes total national welfare, and can also only spend/reallocate infrastructure on national links. The 100$km$ buffer zone takes surrounding cells into account as trading partners. Infrastructure may thus be built to foster international trade, but only within national boundaries, and only if it maximizes welfare for domestic consumers. % \newline 
+
+\subsection*{Optimal Reallocation}
  
-Figure \ref{fig:Realloc} shows the welfare gains from the optimal reallocation of national networks of 39 ECA countries, excluding Russia and Kazakhstan where no solution could be obtained due to the large network sizes. Under increasing returns ($\gamma = 0.169 > \beta$), the gains are higher due to overall lower trade costs $\tau_{ij}$ resulting in larger volumes of trade in this case. But the gains under DR ($\gamma = 0.1 < \beta$) are very similar between the different countries. In both cases, there are four countries: Bulgaria, Tajikistan, Kyrgyzstan, and Estonia, with the highest welfare gains. 
+Figure \ref{fig:Realloc} shows the welfare gains from the optimal reallocation of national networks of 39 ECA countries, excluding Russia where no solution could be obtained due to the very large network. Under increasing returns ($\gamma = 0.169 > \beta$), the gains are higher due to overall lower trade costs $\tau_{ij}$ resulting in larger volumes of trade in this case. But the gains under DR ($\gamma = 0.1 < \beta$) are 
 
  \begin{figure}[H] \vspace{-10mm}
  \centering
  \caption{\label{fig:Realloc} Welfare Gains from Optimal Reallocation of National Road Networks}
  \vspace{-3mm}
- \includegraphics[width=\textwidth]{"../figures/ECA_grid_network_realloc_barchart_both.pdf"} %trim={<left> <lower> <right> <upper>}
+ \includegraphics[width=\textwidth]{"../figures/ECA_grid_network_realloc_barchart_both_decomp.pdf"} %trim={<left> <lower> <right> <upper>}
  \\ \vspace{3mm}
  \begin{adjustbox}{center}
  \begin{tabular}{cc}
@@ -75,19 +77,26 @@ Figure \ref{fig:Realloc} shows the welfare gains from the optimal reallocation o
  \end{tabular}
  \end{adjustbox}
  \end{figure}
+ 
+\noindent very similar between the different countries. In both cases, there are four countries: Bulgaria, Tajikistan, Kyrgyzstan, and Estonia, with the highest welfare gains. \newline 
 
 The bottom half of Figure \ref{fig:Realloc} therefore shows the graphical results for these countries. The thickness of links amounts to the final reallocation, whereas their colour indicates whether infrastruc-ture was added (red) or removed (blue) during the reallocation process. The size of nodes corresponds to their population, and their colour indicates welfare gains from reallocation, with red or orange nodes experiencing gains, green nodes maintaining their welfare level, and blue nodes loosing out on welfare. National nodes surrounded by a white circle or buffer nodes surrounded by a black circle produce their own unique product and are thus particularly important trading partners. \newline 
 
 The overall reallocation pattern exhibited by these four countries, as well as most other countries, is that infrastructure is taken out of peripheral and sparsely populated regions to better connect urban centers. The results thus lend support to the hypothesis that, at least in terms of road connectivity, too much infrastructure spending targeted unimportant roads, whereas larger welfare gains could have been achieved from improving inter-city connectivity. Yet, in all cases, the welfare gains are below 1\%, indicating that road networks in ECA are generally more efficient than, e.g., in Africa, where some countries like Somalia can reap gains of $\geq$6\% from reallocation \citep{graff2024spatial}. \newline 
 
-Appendix Figure \ref{fig:ReallocExtra} shows the reallocation graphs for further countries under increasing returns ($\gamma > \beta$) in order of their welfare gains. As indicated, the general pattern is that infrastructure is reallocated from the periphery to segments connecting urban centers, as this is where most people live and thus where most welfare gains can be reaped. A concave individual utility function alone is thus not sufficient to incentivize a welfare maximizing social planner to spend significantly on infrastructure in scarcely populated rural regions. Other planning objectives may correct for this. \newline 
+ The lighter shaded bars in Figure \ref{fig:Realloc} further visualize the change in welfare attributable to a volume effect measured as the total increase in consumption applied proportionally to all locations. The remaining welfare change is due to an allocation effect. In the median country, 86\% of the welfare gain is explained by the volume effect, with mild heterogeneity across countries ranging from 61\%-100\%. Thus, a more optimal allocation of road infrastructure would have generated welfare gains predominantly through increased trade volumes between major cities.  \newline 
+ 
+We can also seek to better understand the misallocation by correlating it with various country characteristics such as total land area ($r = 0.31$) GDP per Capita ($r = -0.23$), the Logistics Performance Index ($r = -0.2$), the component of it measuring 'Quality of Trade and Transport-Related Infrastructure' ($r = -0.18$), and the 2020 Doing Business Score ($r = -0.19$). Thus, misallocation is mildly correlated with development indicators and total land area, suggesting that both the capacity to plan and the planning scope/economic dispersement affect outcome optimality. \newline 
 
-Analogous, Figure \ref{fig:10pExp} visualizes the welfare gains from an optimal 10\% network expansion. The gains are lower than from reallocation, indicating that even an optimal a 10\% investment is not able to equal the benefits from a more optimal past resource allocation. Again, Estonia would reap the largest gains of around 0.35\%, and the ranking of countries is overall similar to the reallocation case. It is more notably, however, that some western European countries such as Greece and Denmark could also reap large gains from a 10\% optimal network expansion. This may be correlated with their their more fragmented geographies and the resulting difficulties of building efficient integrated road networks on them. Similar to the reallocation case, optimal expansions typically target major links connecting urban centers, but also extend investments a bit into the periphery. \newline 
+Appendix Figure \ref{fig:ReallocExtra} shows the reallocation graphs for further countries under increasing returns ($\gamma > \beta$) in order of their welfare gains. As indicated, the general pattern is that infrastructure is reallocated from the periphery to segments connecting urban centers, as this is where most people live and thus where most welfare gains can be reaped. A concave individual utility function alone is thus not sufficient to incentivize a welfare maximizing social planner to spend significantly on infrastructure in scarcely populated rural regions. Other planning objectives may correct for this. % \newline 
+
+\subsection*{Optimal 10\% Expansion}
+
+Analogous, Figure \ref{fig:10pExp} visualizes the welfare gains from an optimal 10\% network expansion. The gains are lower than from reallocation, indicating that even an optimal a 10\% investment is not able to equal the benefits from a more optimal past resource allocation. Again, Estonia would reap the largest gains of around 0.35\%, and the ranking of countries is overall similar to the reallocation case. It is more notably, however, that some western European countries such as Greece and Denmark could also reap large gains from a 10\% optimal network expansion. This may be correlated with their their more fragmented geographies and the resulting difficulties of building efficient integrated road networks on them. Similar to the reallocation case, optimal expansions mostly target major links connecting urban centers, complemented by small peripheral investments. \newline 
 
 Appendix Figure \ref{fig:10PExpExtra} again shows the optimal expansions for further countries in order of their welfare gains. In most countries, the investments are also allocated along central links, with some supporting investments to 'feeder lines'. \newline
 
-The analysis overall thus suggests that European and particularly Central Asian countries could reap moderate welfare gains from an optimal expansion of their road networks targeting mainly central links connecting major urban centers. This is not a consequence of the IR ($\gamma > \beta$) assumption leading to more tree-like networks as described by \citet{fajgelbaum2020optimal}; the results under DR ($\gamma < \beta$) are very similar and thus not shown. 
-
+The analysis overall thus suggests that European and particularly Central Asian countries could reap moderate welfare gains from an optimal expansion of their road networks targeting mainly
 
  \begin{figure}[H] \vspace{-10mm}
  \centering
@@ -104,6 +113,88 @@ The analysis overall thus suggests that European and particularly Central Asian 
  \end{tabular}
  \end{adjustbox}
  \end{figure}
+
+\noindent central links connecting major urban centers. This is not a consequence of the IR ($\gamma > \beta$) assumption leading to more tree-like networks as described by \citet{fajgelbaum2020optimal}; the results under DR ($\gamma < \beta$) are very similar and thus not shown. 
+
+
+\subsection*{Optimal Investments in ECA's Transport Network}
+
+Apart from national network inefficiencies, I also consider the transport network of the entire macro-region and simulate optimal investments into it. To do this, I first select the largest cities with a population above 250,000 that are at least 50$km$ apart from each other, using data from the Simplemaps World Cities Database \citep{simplemaps} built from authoritative sources. This yields 281 key cities. I then use OSRM to obtain fastest car routes between them, and intersect and process their geometries following \citet{krantz2024optimal} to obtain an undirected graph representation of the continental road network comprising 952 nodes and 1722 edges. I assign to each node city populations within 30$km$ of that node, and calibrate its productivity as the inverse-distance weighted GDP per capita in 2017 PPP terms across all cell-centroids within 50$km$ of the node using the 0.25$^\circ$ data by \citet{LGEAW}. I also reparameterize each edge with the road distance and travel time from OSRM. Furthermore, I apply a network finding algorithm following \citet{krantz2024optimal} to the network to find high-potential new/missing links in the network and verify that they can be constructed. This yields 274 potential links, highlighted in green in Figure \ref{fig:ECAnet}, which would decrease road distance by at least 50\% along the nodes it connects. 
+
+
+\begin{figure}[H]
+\centering
+\caption{\label{fig:ECAnet} ECA's Transport Network Graph}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/trans_ECA_network_actual_discretized_gravity_new_roads_real_edges.pdf"}
+\scriptsize 
+\emph{Notes:} Figure shows ECA transport network connecting 281 key cities (blue dots), including proposed links in green.
+\end{figure}
+
+The average route efficiency across existing links is 0.8, and I assume that the same holds for proposed links. Thus, their length is assumed $1/0.8 = 1.25$ times longer than the geodesic distance spanned by them. Figure \ref{fig:ECAnet} also visualizes a normalized sum of gravity along the existing links, which is the sum, across all routes using a particular link of the product of origin and destination city populations divided by the road distance. Thus, it is a measure of the expected traffic along the link, assuming open borders. In this regard, I also note that the Ukraine-Russia border is presently closed and OSRM does not route across it. Consequently, roads crossing it are not part of the existing network, but the network finding algorithm found several links reconnecting Russia to Ukraine. Since much physical infrastructure was destroyed in the war, it may be sensible to assume that these links need to be rebuilt, although at a lower cost than new roads. \newline 
+
+Speaking of which, I also estimate the cost of constructing/upgrading each link following \citet{krantz2024optimal} using an equation of the form
+\begin{equation} \label{eq:COST}
+\ln\left(\frac{\text{cost}}{km}\right) = \ln(X) -0.11 (\text{dist} > 50km) + 0.12 \ln(\text{rugg}) + 0.085 \ln\left(\frac{\text{pop}}{km^2}\right),
+\end{equation}
+where $X = $100,000 for new links and lower for different types of upgrades following \citet{krantz2024optimal} and information in the ROCKS database \citep{rocks2018}. Appendix Figure \ref{fig:ECAcalibdet} visualizes various network calibration details discussed above. Ostensibly, the network is Western Europe is much better and faster than in Eastern Europe, Russia, and Central Asia. 
+
+
+\subsubsection*{Optimal Investments in Partial Equilibrium}
+
+To analyze the cost-benefit of building/upgrading each link, I simulate the total gains in market access (MA) from upgrading each link, divided by the cost of upgrading it. The MA of each node is computed as the inverse-travel time weighted sum of GDP of all other nodes, and total MA is the simple sum of MA across all nodes. Total MA is thus denominated in dollars per minute of travel time, and the gains per investment are denominated in dollars per minute per dollar invested. \newline 
+
+Figure \ref{fig:ECAMAPG} shows the return in dollars per minute per dollar invested from building/upgrading each link individually to allow a travel speed of 100$km/h$, while keeping all other links at their original speed. It is thus a partial equilibrium result, as all other links are kept fixed. Ostensibly, re-establishing connectivity along the Russia-Ukraine border yields the highest marginal returns, but also upgrading major transport routes, especially to the major metropoles Moscow and Istanbul, but also to various Western European cities like Rotterdam and Paris, yields high marginal returns. 
+
+\begin{figure}[H]
+\centering
+\caption{\label{fig:ECAMAPG} Market Access Gains per Dollar Invested}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/PE/trans_ECA_network_MA_gain_all_100kmh_pusd_yl_or_rd.pdf"}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/PE/trans_ECA_network_MA_gain_all_100kmh_pusd_cons_MAg0.1.pdf"}
+\scriptsize 
+\emph{Notes:} Figure shows MA gains in dollars per minute per dollar invested in building/upgrading the respective link. The bottom half highlight high-yield links with return $>$0.1 \$/min/\$ using a stronger colour gradient. 
+\end{figure}
+
+The bottom panel of Figure \ref{fig:ECAMAPG} highlights high-yield with a return of $>$0.1 \$/min/\$ using a stronger colour gradient. It reveals that the extremely high-yield segments in red are almost always close to major city centers, at least in Western Europe. In Eastern Europe upgrading the road to Moscow, from Dresden via Warsaw and Minsk, also yields very high returns along extended segments, e.g. between Wroclaw and Lodz in Poland or between Brest and Minsk in Belarus. The other high-return road is the one passing through Eastern Europe down to Istanbul, via Munich, Vienna, Budapest, Belgrade, and Sofia. Here mostly smaller segments, e.g. between Bratislava and Gyor, or in the vicinity of Belgrade, would yield high MA gains if upgraded. \newline 
+
+A caveat of the analysis so far is the unrealistic assumption of open borders throughout the entire region, which is true for the Schengen Area, but not for Eastern Europe or Central Asia. % Thus, additional analysis should take into consideration estimates of border frictions, particularly before prioritizing transnational links. 
+
+\subsubsection*{Optimal Investments in General Equilibrium}
+
+I also consider the optimal general equilibrium spending of a fixed budget on extending and upgrading the network using the quantitative framework of \citet{fajgelbaum2020optimal}. According to my cost estimates, the entire network admits investments of 74.1 billion 2015 USD, of which 51.6 billion fall on upgrading existing links, and 22.5 billion on constructing the 274 proposed links. \newline 
+
+I thus run simulations with investment budgets of 10 and 25 billion to create informative resource allocation problems. In terms of model parameterization, I follow the gridded approach above except that the infrastructure $I_{jk}$ is given in terms of speed ($km/h$) instead of time efficiency, and bounded between the current speed and 100$km/h$. As in \citet{krantz2024optimal}, the estimated per-$km/h$ infrastructure building cost $\delta^I_{jk}$ is the estimated cost of upgrading a link (length times cost/km give in Appendix Figure \ref{fig:ECAcalibdet}) divided by the difference of $I_{jk}$ from 100$km/h$, assuming that investing the estimated amount will bring a link to 100$km/h$. Another difference to the gridded approach are the values of $\gamma$ and $\beta$, which, due to the larger network size, and numerical issues with lower parameter values, are set to $\beta = 1$ and $\gamma = 1.2$ reflecting the more likely increasing returns case for large networks. In particular, setting $\beta = 1$ is crucial to achieve convergence. Despite being a bit ad-hoc, these values are close to \citet{graff2024spatial}, who sets $\gamma = 0.946$ and $\beta = 1.177$. \newline 
+
+The productivity calibration again follows \citet{armington1969theory} and \citet{fajgelbaum2020optimal}: I let 25 key cities produce different products and divide the remaining cities into 4 quartiles by population. Thus, in total there are 29 products traded across the network differentiated by origin. Like \citet{fajgelbaum2020optimal}, I assume that the cross-goods congestion applies. \newline 
+
+
+Figure \ref{fig:ECAGE10B} shows the optimal \$10B investment allocation. In Western Europe, some funds are spent on building selected new links, whereas in Eastern Europe a combination of new links and upgrades is chosen. Notably, all links connecting Russio to Ukraine are restored, and also a large 
+
+
+\begin{figure}[H]
+\centering
+\caption{\label{fig:ECAGE10B} Optimal \$10 Billion Network Investment Allocation}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_29g_10b_fixed_irs_cgc_sigma3.8_rho0_perc_ug.pdf"}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_29g_10b_fixed_irs_cgc_sigma3.8_rho0_upw_gain.pdf"}
+\scriptsize 
+\emph{Notes:} Top panel shows optimal 10 billion 2015 USD network investment in terms of the percentage of proposed construction/upgrading work completed on each link. The bottom panel shows the corresponding welfare gains. \\ \vspace{-5mm}
+\end{figure}
+
+\noindent new road connecting St. Petersburg in Russia to Tallinn in Estonia is built. Very little infrastructure on the other hand is built in Central Asia, in fact, only a few links on the east side of the Caspian Sea are upgraded. This is likely due to Central Asia's sparse population and low productivity. \newline 
+
+The bottom panel of Figure \ref{fig:ECAGE10B} provides the welfare gains in each node. The highest gains of up to 2\% are realized in Ukraine in places that are now a war zone. Gains in western Europe are small, generally below 0.5\%, and there are some mild losses, e.g. in central parts of Germany, due to economic activity shifting to the east. It is notably that Central Asia, despite receiving no mentionable investments, still reaps high welfare gains as the investments in Eastern Europe increase connectivity and trade between Western Europe and Central Asia. This is also apparent from the model-implied trade flows, visualized for four key cities in the top panel of Appendix Figure \ref{fig:ECAGETF}: Despite little production and trade from Tashkent, Uzbekistan, the infrastructure investments enable greater trade flows with Moscow, Paris, and Istanbul. 
+
+\begin{figure}[H]
+\centering
+\caption{\label{fig:ECAGE25B} Optimal \$25 Billion Network Investment Allocation}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_29g_25b_fixed_irs_cgc_sigma3.8_rho0_perc_ug.pdf"}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_29g_25b_fixed_irs_cgc_sigma3.8_rho0_upw_gain.pdf"}
+\scriptsize 
+\emph{Notes:} Top panel shows optimal 25 billion 2015 USD network investment in terms of the percentage of proposed construction/upgrading work completed on each link. The bottom panel shows the corresponding welfare gains. 
+\end{figure}
+
+Figure \ref{fig:ECAGE25B} visualizes an optimal \$25B investment. It broadly generates the same spatial patterns of infrastructure allocation and welfare gains, now including full upgrades of many roads in Russia and Eastern Europe and also (partial) upgrades of some Western European roads. \newline 
+
+Appendix Figures \ref{fig:ECAGE10BOU} and \ref{fig:ECAGE25BOU} additionally show optimal \$10B and \$25B investments where the planner is only allowed to upgrade roads. They yield broadly similar allocations as Figures \ref{fig:ECAGE10B} and \ref{fig:ECAGE25B}, with much more intensive upgrading in Eastern Europe and Russia. These should also serve as an important benchmark for policymakers, as most road projects today involve upgrading existing roads rather than fresh construction, and there may be important obstacles to building some of the 274 proposed links in the network other than a rudimentary assessment of geographic feasibility. 
 
 
 \newpage
@@ -191,6 +282,50 @@ The analysis overall thus suggests that European and particularly Central Asian 
  \end{tabular}
  \end{adjustbox}
  \end{figure}
+ 
+ 
+ \begin{figure}[H]
+\centering
+\caption{\label{fig:ECAcalibdet} ECA Transport Network Calibration Details}
+\begin{tabular}{c}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/PE/trans_ECA_network_cell_GDPC_const_2017_PPP.pdf"} \\
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/PE/trans_ECA_network_average_link_speed.pdf"} \\
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/PE/trans_ECA_network_type_of_work.pdf"} \\
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/PE/trans_ECA_network_cost_km.pdf"}
+\end{tabular}
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\caption{\label{fig:ECAGETF} Model-Generated Trade Flows After Optimal \$10B and \$25B Investments}
+
+After \$10B Optimal Investments \\
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_29g_10b_fixed_irs_cgc_sigma3.8_rho0_good_flows_4_city.pdf"} \\ 
+After \$25B Optimal Investments \\
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_29g_25b_fixed_irs_cgc_sigma3.8_rho0_good_flows_4_city.pdf"} 
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\caption{\label{fig:ECAGE10BOU} Optimal \$10 Billion Network Investment Allocation $-$ Only Upgrades}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_ug_29g_10b_fixed_irs_cgc_sigma3.8_rho0_perc_ug.pdf"}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_ug_29g_10b_fixed_irs_cgc_sigma3.8_rho0_upw_gain.pdf"}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_ug_29g_10b_fixed_irs_cgc_sigma3.8_rho0_good_flows_4_city.pdf"}
+\scriptsize 
+\emph{Notes:} Top panel shows optimal 10 billion 2015 USD network investment in terms of the percentage of proposed upgrading completed. Middle panel shows the corresponding welfare gains. Bottom panel the generated trade flows. 
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\caption{\label{fig:ECAGE25BOU} Optimal \$25 Billion Network Investment Allocationn $-$ Only Upgrades}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_ug_29g_25b_fixed_irs_cgc_sigma3.8_rho0_perc_ug.pdf"}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_ug_29g_25b_fixed_irs_cgc_sigma3.8_rho0_upw_gain.pdf"}
+\includegraphics[width=\textwidth, trim = {0.5cm 0.5cm 0.5cm 0.5cm}, clip]{"../figures/GE/trans_ECA_network_GE_ug_29g_25b_fixed_irs_cgc_sigma3.8_rho0_good_flows_4_city.pdf"}
+\scriptsize 
+\emph{Notes:} Top panel shows optimal 25 billion 2015 USD network investment in terms of the percentage of proposed upgrading completed. Middle panel shows the corresponding welfare gains. Bottom panel the generated trade flows. 
+\end{figure}
  
  
 \end{document}
